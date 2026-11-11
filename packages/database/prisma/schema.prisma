@@ -1,12 +1,13 @@
-// Milestones Coffee 2.0 — Prisma Schema
-// Full schema will be implemented in Prompt 5 (Database identity and authorization).
-// This is the foundation stub with conventions established.
+// Milestones Coffee 2.0 — Full Prisma Schema (Prompt 5)
 //
 // Conventions:
-//   - Money: integer fils suffix (e.g. priceFils, totalFils). Never Float for money.
-//   - Timestamps: DateTime @db.Timestamptz — always UTC in DB, Asia/Dubai for display.
-//   - IDs: String @id @default(uuid())
-//   - Soft deletes via deletedAt: DateTime? @db.Timestamptz
+//   Money  : integer fils (1 AED = 100 fils). Never Float for money.
+//            Column suffix: ...Fils  (e.g. priceFils, totalFils)
+//   Time   : DateTime @db.Timestamptz — stored UTC; display in Asia/Dubai.
+//   IDs    : String @id @default(uuid())
+//   Soft   : deletedAt DateTime? @db.Timestamptz  (or status enum ARCHIVED)
+//   Enums  : SCREAMING_SNAKE_CASE
+//   Tables : snake_case  (Prisma maps from camelCase model names)
 
 generator client {
   provider = "prisma-client-js"
@@ -18,12 +19,1125 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Placeholder model to enable prisma generate ──────────────────────────────
-// Full schema implemented in Prompt 5.
+// ═══════════════════════════════════════════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum BranchStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum ProductStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ModifierOptionStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  PICKED_UP
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORISED
+  CAPTURED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CANCELLED
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum StaffRole {
+  BRANCH_BARISTA
+  BRANCH_SUPERVISOR
+  BRANCH_MANAGER
+  OPERATIONS
+  FINANCE
+  MARKETING
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum StaffStatus {
+  ACTIVE
+  SUSPENDED
+  OFFBOARDED
+}
+
+enum OutboxStatus {
+  PENDING
+  DISPATCHED
+  FAILED
+}
+
+enum GiftCardStatus {
+  ACTIVE
+  REDEEMED
+  EXPIRED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum CorporateEnquiryStatus {
+  NEW
+  REVIEWED
+  QUOTED
+  CLOSED
+}
+
+enum CorporateQuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1. CATALOG
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Physical café branch.
+model Branch {
+  id          String       @id @default(uuid())
+  code        String       @unique           // Short operational code e.g. "DXB-01"
+  slug        String       @unique
+  nameEn      String
+  nameAr      String
+  address     Json                           // { line1, line2, city, emirate, country }
+  coordinates Json                           // { lat, lng }
+  timezone    String       @default("Asia/Dubai")
+  status      BranchStatus @default(DRAFT)
+  createdAt   DateTime     @default(now()) @db.Timestamptz
+  updatedAt   DateTime     @updatedAt @db.Timestamptz
+
+  hours            BranchHours[]
+  closures         BranchClosure[]
+  services         BranchService[]
+  branchProducts   BranchProduct[]
+  pickupReservations PickupReservation[]
+  orders           Order[]
+
+  @@map("branches")
+}
+
+/// Weekly opening schedule. Multiple intervals allow split shifts.
+model BranchHours {
+  id        String  @id @default(uuid())
+  branchId  String
+  weekday   Int                             // 0=Sunday … 6=Saturday
+  opensAt   String                          // HH:MM Asia/Dubai
+  closesAt  String                          // HH:MM Asia/Dubai
+  overnight Boolean @default(false)
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@map("branch_hours")
+}
+
+/// Date-specific overrides (closures or replacement hours).
+model BranchClosure {
+  id               String  @id @default(uuid())
+  branchId         String
+  localDate        String                   // YYYY-MM-DD in Asia/Dubai
+  closed           Boolean @default(true)
+  overrideIntervals Json?                   // [{opensAt, closesAt}] if not fully closed
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@unique([branchId, localDate])
+  @@index([branchId])
+  @@map("branch_closures")
+}
+
+/// Services available at a branch (e.g. DINE_IN, DELIVERY, DRIVE_THROUGH).
+model BranchService {
+  id          String @id @default(uuid())
+  branchId    String
+  serviceCode String                        // e.g. "DINE_IN"
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@unique([branchId, serviceCode])
+  @@index([branchId])
+  @@map("branch_services")
+}
+
+/// Product category — self-referential for subcategories.
+model Category {
+  id        String  @id @default(uuid())
+  parentId  String?
+  nameEn    String
+  nameAr    String
+  slug      String  @unique
+  sortOrder Int     @default(100)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+/// A product (coffee, food item, merchandise). Archive instead of delete.
+model Product {
+  id          String        @id @default(uuid())
+  categoryId  String
+  sku         String        @unique
+  slug        String        @unique
+  nameEn      String
+  nameAr      String
+  taxCategory String        @default("STANDARD")
+  status      ProductStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now()) @db.Timestamptz
+  updatedAt   DateTime      @updatedAt @db.Timestamptz
+
+  category       Category               @relation(fields: [categoryId], references: [id])
+  variants       ProductVariant[]
+  modifierGroups ProductModifierGroup[]
+  media          ProductMedia[]
+  allergens      ProductAllergen[]
+
+  @@index([categoryId])
+  @@map("products")
+}
+
+/// A specific size/flavour variant of a product.
+model ProductVariant {
+  id            String @id @default(uuid())
+  productId     String
+  sku           String @unique
+  labelEn       String
+  labelAr       String
+  basePriceFils Int                           // ≥ 0; fils (integer)
+  sortOrder     Int    @default(100)
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @updatedAt @db.Timestamptz
+
+  product         Product          @relation(fields: [productId], references: [id])
+  branchProducts  BranchProduct[]
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+  inventoryItems  InventoryItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+/// Modifier group definition (e.g. "Milk choice", "Extra shots").
+model ModifierGroup {
+  id            String @id @default(uuid())
+  nameEn        String
+  nameAr        String
+  minSelections Int    @default(0)
+  maxSelections Int    @default(1)
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @updatedAt @db.Timestamptz
+
+  options              ModifierOption[]
+  productModifierGroups ProductModifierGroup[]
+
+  @@map("modifier_groups")
+}
+
+/// An option within a modifier group.
+model ModifierOption {
+  id             String               @id @default(uuid())
+  groupId        String
+  labelEn        String
+  labelAr        String
+  priceDeltaFils Int                  // May be 0 or negative
+  sortOrder      Int                  @default(100)
+  status         ModifierOptionStatus @default(ACTIVE)
+  createdAt      DateTime             @default(now()) @db.Timestamptz
+  updatedAt      DateTime             @updatedAt @db.Timestamptz
+
+  group                  ModifierGroup           @relation(fields: [groupId], references: [id])
+  cartItemModifiers      CartItemModifier[]
+  orderItemModifiers     OrderItemModifier[]
+
+  @@index([groupId])
+  @@map("modifier_options")
+}
+
+/// Junction: which modifier groups apply to a product.
+model ProductModifierGroup {
+  id        String @id @default(uuid())
+  productId String
+  groupId   String
+  sortOrder Int    @default(100)
+
+  product Product       @relation(fields: [productId], references: [id])
+  group   ModifierGroup @relation(fields: [groupId], references: [id])
+
+  @@unique([productId, groupId])
+  @@index([productId])
+  @@map("product_modifier_groups")
+}
+
+/// Branch-level pricing and availability for a variant.
+model BranchProduct {
+  id         String  @id @default(uuid())
+  branchId   String
+  variantId  String
+  priceFils  Int                             // ≥ 0; branch override
+  available  Boolean @default(true)
+  dailyLimit Int?
+
+  branch  Branch         @relation(fields: [branchId], references: [id])
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([branchId, variantId])
+  @@index([branchId])
+  @@index([variantId])
+  @@map("branch_products")
+}
+
+/// Atomic inventory reservation unit.
+model InventoryItem {
+  id        String @id @default(uuid())
+  variantId String
+  stockKey  String @unique                   // e.g. "branch:DXB-01:variant:abc"
+  version   Int    @default(0)              // Optimistic concurrency
+  onHand    Int    @default(0)
+  reserved  Int    @default(0)
+
+  variant               ProductVariant         @relation(fields: [variantId], references: [id])
+  inventoryReservations InventoryReservation[]
+
+  @@index([variantId])
+  @@map("inventory_items")
+}
+
+/// Product media (images). Sorted by sortOrder.
+model ProductMedia {
+  id        String  @id @default(uuid())
+  productId String
+  url       String
+  altEn     String  @default("")
+  altAr     String  @default("")
+  sortOrder Int     @default(100)
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@map("product_media")
+}
+
+/// Allergens declared for a product. Requires evidenceRef before publication.
+model ProductAllergen {
+  id           String @id @default(uuid())
+  productId    String
+  allergenCode String                        // e.g. "DAIRY", "GLUTEN"
+  evidenceRef  String                        // Reference to Operations verification document
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([productId, allergenCode])
+  @@index([productId])
+  @@map("product_allergens")
+}
+
+/// External system mappings (POS, delivery platform, etc.).
+model IntegrationMapping {
+  id           String   @id @default(uuid())
+  provider     String                        // e.g. "DELIVERECT", "POS_VENDOR"
+  entityType   String                        // e.g. "PRODUCT", "ORDER"
+  externalId   String
+  internalId   String
+  metadata     Json?
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
+
+  @@unique([provider, entityType, externalId])
+  @@index([provider, entityType])
+  @@map("integration_mappings")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 2. CUSTOMER AND COMMERCE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Customer identity record. Auth via external provider (OTP or OAuth).
+model Customer {
+  id          String   @id @default(uuid())
+  authIssuer  String                         // External identity provider ID
+  authSubject String                         // Provider-scoped subject (sub claim)
+  name        String?
+  email       String?                        // Verified email
+  phoneE164   String?                        // E.164 format e.g. +971501234567
+  locale      String   @default("en")        // "en" | "ar"
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+  deletedAt   DateTime? @db.Timestamptz      // Soft delete after retention period
+
+  addresses       CustomerAddress[]
+  consents        CustomerConsent[]
+  deletionRequests CustomerDeletionRequest[]
+  carts           Cart[]
+  orders          Order[]
+  loyaltyAccount  LoyaltyAccount?
+
+  @@unique([authIssuer, authSubject])
+  @@index([email])
+  @@index([phoneE164])
+  @@map("customers")
+}
+
+/// Customer delivery / billing addresses.
+model CustomerAddress {
+  id         String  @id @default(uuid())
+  customerId String
+  label      String?                         // "Home", "Work" etc.
+  line1      String
+  line2      String?
+  city       String
+  emirate    String
+  country    String  @default("AE")
+  isDefault  Boolean @default(false)
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@map("customer_addresses")
+}
+
+/// Append-only consent record. Never overwrite — append withdrawal evidence.
+model CustomerConsent {
+  id           String   @id @default(uuid())
+  customerId   String
+  consentType  String                        // "MARKETING_EMAIL", "PUSH", "DATA_ANALYTICS"
+  granted      Boolean
+  evidenceRef  String                        // IP, timestamp, form version
+  occurredAt   DateTime @db.Timestamptz
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId, consentType])
+  @@map("customer_consents")
+}
+
+/// GDPR/PDPL deletion request lifecycle.
+model CustomerDeletionRequest {
+  id           String   @id @default(uuid())
+  customerId   String
+  requestedAt  DateTime @default(now()) @db.Timestamptz
+  scheduledFor DateTime @db.Timestamptz     // After retention period
+  completedAt  DateTime? @db.Timestamptz
+  retentionNote String?                     // If retained for legal reason
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@map("customer_deletion_requests")
+}
+
+/// Shopping cart. Guest carts use guestTokenHash; customer carts use customerId.
+model Cart {
+  id              String   @id @default(uuid())
+  customerId      String?
+  guestTokenHash  String?                   // Hashed session token for guest carts
+  branchId        String?                   // Selected pickup branch
+  version         Int      @default(0)      // Optimistic concurrency
+  expiresAt       DateTime @db.Timestamptz
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @updatedAt @db.Timestamptz
+
+  customer      Customer?       @relation(fields: [customerId], references: [id])
+  items         CartItem[]
+  checkoutQuotes CheckoutQuote[]
+
+  @@index([customerId])
+  @@index([guestTokenHash])
+  @@index([expiresAt])
+  @@map("carts")
+}
+
+/// Line item in a cart.
+model CartItem {
+  id        String @id @default(uuid())
+  cartId    String
+  variantId String
+  quantity  Int                             // > 0
+
+  cart      Cart           @relation(fields: [cartId], references: [id])
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  modifiers CartItemModifier[]
+
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+/// Modifier selection on a cart item.
+model CartItemModifier {
+  id       String @id @default(uuid())
+  itemId   String
+  optionId String
+  quantity Int    @default(1)
+
+  item   CartItem       @relation(fields: [itemId], references: [id])
+  option ModifierOption @relation(fields: [optionId], references: [id])
+
+  @@index([itemId])
+  @@map("cart_item_modifiers")
+}
+
+/// Immutable checkout quote. Reject stale quotes before order creation.
+model CheckoutQuote {
+  id                   String   @id @default(uuid())
+  cartId               String
+  cartVersion          Int
+  branchId             String
+  subtotalFils         Int                   // Integer fils only
+  discountFils         Int      @default(0)
+  taxFils              Int      @default(0)
+  totalFils            Int                   // = subtotal - discount + tax
+  pricingPolicyVersion String
+  expiresAt            DateTime @db.Timestamptz
+  createdAt            DateTime @default(now()) @db.Timestamptz
+
+  cart Cart @relation(fields: [cartId], references: [id])
+
+  @@index([cartId])
+  @@map("checkout_quotes")
+}
+
+/// Customer order.
+model Order {
+  id          String      @id @default(uuid())
+  orderNumber String      @unique            // Human-readable e.g. "MC-2024-001234"
+  customerId  String?
+  branchId    String
+  status      OrderStatus @default(PENDING)
+  totalFils   Int                            // Integer fils only
+  taxFils     Int         @default(0)
+  discountFils Int        @default(0)
+  currency    String      @default("AED")
+  locale      String      @default("en")
+  notes       String?
+  pricingPolicyVersion String
+  quoteId     String?
+  createdAt   DateTime    @default(now()) @db.Timestamptz
+  updatedAt   DateTime    @updatedAt @db.Timestamptz
+
+  customer           Customer?            @relation(fields: [customerId], references: [id])
+  branch             Branch               @relation(fields: [branchId], references: [id])
+  items              OrderItem[]
+  events             OrderEvent[]
+  payments           Payment[]
+  refunds            Refund[]
+  inventoryReservations InventoryReservation[]
+  pickupReservation  PickupReservation?
+
+  @@index([customerId])
+  @@index([branchId])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+/// Order line item — immutable after CONFIRMED. Snapshot at time of order.
+model OrderItem {
+  id                String @id @default(uuid())
+  orderId           String
+  variantId         String
+  variantSku        String                   // Snapshot
+  variantNameEn     String                   // Snapshot
+  variantNameAr     String                   // Snapshot
+  quantity          Int                      // > 0
+  unitPriceFils     Int
+  lineDiscountFils  Int    @default(0)
+  lineTaxFils       Int    @default(0)
+  lineTotalFils     Int
+  currency          String @default("AED")
+  taxPolicyVersion  String
+  promotionRefs     Json?                    // Array of promotion IDs applied
+  quoteVersion      String?
+
+  order     Order          @relation(fields: [orderId], references: [id])
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  modifiers OrderItemModifier[]
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+/// Modifier snapshot on a confirmed order item.
+model OrderItemModifier {
+  id             String @id @default(uuid())
+  orderItemId    String
+  optionId       String
+  optionLabelEn  String                      // Snapshot
+  optionLabelAr  String                      // Snapshot
+  priceDeltaFils Int
+  quantity       Int    @default(1)
+
+  orderItem OrderItem      @relation(fields: [orderItemId], references: [id])
+  option    ModifierOption @relation(fields: [optionId], references: [id])
+
+  @@index([orderItemId])
+  @@map("order_item_modifiers")
+}
+
+/// Append-only order state machine log.
+model OrderEvent {
+  id          String   @id @default(uuid())
+  orderId     String
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  actorId     String?                        // customerId or staffUserId
+  actorType   String?                        // "CUSTOMER" | "STAFF" | "SYSTEM"
+  note        String?
+  metadata    Json?
+  occurredAt  DateTime @default(now()) @db.Timestamptz
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId, occurredAt])
+  @@map("order_events")
+}
+
+/// Payment record. Financial authority — never derive totals from cache.
+model Payment {
+  id              String        @id @default(uuid())
+  orderId         String
+  provider        String                      // e.g. "CHECKOUT_COM", "APPLE_PAY"
+  externalId      String                      // Provider-assigned payment ID
+  status          PaymentStatus @default(PENDING)
+  amountFils      Int                         // Integer fils
+  currency        String        @default("AED")
+  capturedFils    Int           @default(0)
+  method          String?                     // "CARD", "WALLET", "CASH"
+  metadata        Json?
+  createdAt       DateTime      @default(now()) @db.Timestamptz
+  updatedAt       DateTime      @updatedAt @db.Timestamptz
+
+  order   Order    @relation(fields: [orderId], references: [id])
+  refunds Refund[]
+
+  @@unique([provider, externalId])
+  @@index([orderId])
+  @@map("payments")
+}
+
+/// Refund against a payment. Cumulative refunds bounded by captured amount.
+model Refund {
+  id               String       @id @default(uuid())
+  paymentId        String
+  orderId          String
+  externalId       String?                    // Provider refund reference
+  status           RefundStatus @default(PENDING)
+  amountFils       Int
+  reason           String?
+  initiatedBy      String?                    // staffUserId or "SYSTEM"
+  createdAt        DateTime     @default(now()) @db.Timestamptz
+  updatedAt        DateTime     @updatedAt @db.Timestamptz
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+
+  @@unique([externalId])
+  @@index([paymentId])
+  @@index([orderId])
+  @@map("refunds")
+}
+
+/// Inventory reservation — atomic; released on timeout or order completion.
+model InventoryReservation {
+  id              String   @id @default(uuid())
+  inventoryItemId String
+  orderId         String?
+  source          String                      // e.g. "ORDER", "RESTOCK"
+  quantity        Int
+  expiresAt       DateTime @db.Timestamptz
+  consumedAt      DateTime? @db.Timestamptz
+  releasedAt      DateTime? @db.Timestamptz
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  order         Order?        @relation(fields: [orderId], references: [id])
+
+  @@unique([source, orderId])
+  @@index([inventoryItemId])
+  @@map("inventory_reservations")
+}
+
+/// Pickup slot reservation — atomic capacity management.
+model PickupReservation {
+  id         String   @id @default(uuid())
+  orderId    String   @unique
+  branchId   String
+  slotStart  DateTime @db.Timestamptz
+  slotEnd    DateTime @db.Timestamptz
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  order  Order  @relation(fields: [orderId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@index([branchId, slotStart])
+  @@map("pickup_reservations")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3. LOYALTY AND CORPORATE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Customer loyalty account. balanceProjection must reconcile to ledger sum.
+model LoyaltyAccount {
+  id                String   @id @default(uuid())
+  customerId        String   @unique
+  balanceProjection Int      @default(0)      // Fils-equivalent projection
+  tier              String   @default("STANDARD")
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @updatedAt @db.Timestamptz
+
+  customer     Customer             @relation(fields: [customerId], references: [id])
+  transactions LoyaltyTransaction[]
+  redemptions  Redemption[]
+
+  @@map("loyalty_accounts")
+}
+
+/// Append-only loyalty ledger. Business source + action must be unique.
+model LoyaltyTransaction {
+  id               String   @id @default(uuid())
+  loyaltyAccountId String
+  action           String                      // "EARN", "REDEEM", "EXPIRE", "ADJUST"
+  businessSource   String                      // "ORDER", "PROMOTION", "MANUAL"
+  businessRef      String?                     // orderId, promotionId etc.
+  points           Int                         // Positive = earn, negative = spend
+  note             String?
+  occurredAt       DateTime @default(now()) @db.Timestamptz
+
+  loyaltyAccount LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id])
+
+  @@unique([businessSource, businessRef, action])
+  @@index([loyaltyAccountId, occurredAt])
+  @@map("loyalty_transactions")
+}
+
+/// Loyalty rule version. Published versions immutable once used.
+model LoyaltyRule {
+  id            String   @id @default(uuid())
+  version       String   @unique
+  earnRateJson  Json                            // Business rules as approved JSON
+  expiryDays    Int?
+  publishedAt   DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+
+  @@map("loyalty_rules")
+}
+
+/// Redeemable reward definition.
+model Reward {
+  id          String   @id @default(uuid())
+  nameEn      String
+  nameAr      String
+  pointsCost  Int                              // > 0
+  benefitJson Json                             // Approved benefit definition
+  validFrom   DateTime @db.Timestamptz
+  validUntil  DateTime? @db.Timestamptz
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  redemptions Redemption[]
+
+  @@map("rewards")
+}
+
+/// Loyalty redemption — atomic reserve → commit → reverse lifecycle.
+model Redemption {
+  id               String   @id @default(uuid())
+  loyaltyAccountId String
+  rewardId         String
+  orderId          String?
+  pointsSpent      Int
+  status           String   @default("RESERVED") // "RESERVED", "COMMITTED", "REVERSED"
+  createdAt        DateTime @default(now()) @db.Timestamptz
+  updatedAt        DateTime @updatedAt @db.Timestamptz
+
+  loyaltyAccount LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id])
+  reward         Reward          @relation(fields: [rewardId], references: [id])
+
+  @@index([loyaltyAccountId])
+  @@map("redemptions")
+}
+
+/// Gift card — store hashed code only. Never expose full code.
+model GiftCard {
+  id                String        @id @default(uuid())
+  codeDigest        String        @unique       // SHA-256 of the full code
+  status            GiftCardStatus @default(ACTIVE)
+  balanceProjection Int                          // Integer fils
+  currency          String        @default("AED")
+  expiresAt         DateTime?     @db.Timestamptz
+  issuedTo          String?                      // customerId (nullable = anonymous)
+  createdAt         DateTime      @default(now()) @db.Timestamptz
+  updatedAt         DateTime      @updatedAt @db.Timestamptz
+
+  transactions GiftCardTransaction[]
+
+  @@map("gift_cards")
+}
+
+/// Append-only gift card ledger.
+model GiftCardTransaction {
+  id             String   @id @default(uuid())
+  giftCardId     String
+  action         String                           // "ISSUE", "REDEEM", "RELOAD", "EXPIRE"
+  businessSource String
+  businessRef    String?
+  amountFils     Int
+  occurredAt     DateTime @default(now()) @db.Timestamptz
+
+  giftCard GiftCard @relation(fields: [giftCardId], references: [id])
+
+  @@unique([businessSource, businessRef, action])
+  @@index([giftCardId, occurredAt])
+  @@map("gift_card_transactions")
+}
+
+/// Promotional campaign definition.
+model Promotion {
+  id          String   @id @default(uuid())
+  nameEn      String
+  nameAr      String
+  code        String?  @unique               // Normalized coupon code when present
+  rulesJson   Json                           // Eligibility and discount rules
+  validFrom   DateTime @db.Timestamptz
+  validUntil  DateTime? @db.Timestamptz
+  usageLimit  Int?
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  redemptions PromotionRedemption[]
+
+  @@map("promotions")
+}
+
+/// Atomic promotion redemption record. One order uses one promotion once.
+model PromotionRedemption {
+  id          String   @id @default(uuid())
+  promotionId String
+  orderId     String
+  customerId  String?
+  discountFils Int
+  redeemedAt  DateTime @default(now()) @db.Timestamptz
+
+  promotion Promotion @relation(fields: [promotionId], references: [id])
+
+  @@unique([orderId, promotionId])
+  @@index([promotionId])
+  @@map("promotion_redemptions")
+}
+
+/// Corporate account (B2B client).
+model CorporateAccount {
+  id          String   @id @default(uuid())
+  nameEn      String
+  nameAr      String?
+  contactName String
+  contactEmail String
+  contactPhone String?
+  trn         String?                        // UAE Tax Registration Number
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  enquiries CorporateEnquiry[]
+  quotes    CorporateQuote[]
+
+  @@map("corporate_accounts")
+}
+
+/// Corporate enquiry form submission.
+model CorporateEnquiry {
+  id               String                 @id @default(uuid())
+  corporateAccountId String?
+  contactName      String
+  contactEmail     String
+  contactPhone     String?
+  companyName      String
+  message          String
+  consentEvidence  String                 // IP + timestamp + form version
+  status           CorporateEnquiryStatus @default(NEW)
+  spamScore        Float?
+  createdAt        DateTime               @default(now()) @db.Timestamptz
+  updatedAt        DateTime               @updatedAt @db.Timestamptz
+
+  corporateAccount CorporateAccount? @relation(fields: [corporateAccountId], references: [id])
+
+  @@index([corporateAccountId])
+  @@index([createdAt])
+  @@map("corporate_enquiries")
+}
+
+/// Corporate quote — unique number+version. Immutable on acceptance.
+model CorporateQuote {
+  id                 String               @id @default(uuid())
+  corporateAccountId String
+  quoteNumber        String
+  version            Int                  @default(1)
+  status             CorporateQuoteStatus @default(DRAFT)
+  lineItemsJson      Json                 // Snapshot of quoted items and prices
+  totalFils          Int                  // Integer fils
+  validUntil         DateTime             @db.Timestamptz
+  acceptedAt         DateTime?            @db.Timestamptz
+  createdAt          DateTime             @default(now()) @db.Timestamptz
+  updatedAt          DateTime             @updatedAt @db.Timestamptz
+
+  corporateAccount CorporateAccount @relation(fields: [corporateAccountId], references: [id])
+
+  @@unique([quoteNumber, version])
+  @@index([corporateAccountId])
+  @@map("corporate_quotes")
+}
+
+/// Customer subscription (e.g. monthly coffee bundle).
+model Subscription {
+  id               String             @id @default(uuid())
+  customerId       String
+  planId           String                     // References plan definition (Phase 3)
+  status           SubscriptionStatus @default(ACTIVE)
+  externalId       String?            @unique // Provider subscription reference
+  recurringConsent Boolean            @default(false)
+  nextBillingAt    DateTime?          @db.Timestamptz
+  createdAt        DateTime           @default(now()) @db.Timestamptz
+  updatedAt        DateTime           @updatedAt @db.Timestamptz
+
+  cycles SubscriptionCycle[]
+
+  @@index([customerId])
+  @@map("subscriptions")
+}
+
+/// One billing cycle of a subscription.
+model SubscriptionCycle {
+  id             String   @id @default(uuid())
+  subscriptionId String
+  billingCycle   String                       // ISO period e.g. "2024-01"
+  orderId        String?
+  amountFils     Int
+  billedAt       DateTime? @db.Timestamptz
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@unique([subscriptionId, billingCycle])
+  @@index([subscriptionId])
+  @@map("subscription_cycles")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 4. ADMINISTRATION AND INTEGRATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Staff user identity — separate from customer identities.
+model StaffUser {
+  id          String      @id @default(uuid())
+  authIssuer  String
+  authSubject String
+  email       String      @unique
+  name        String
+  role        StaffRole
+  status      StaffStatus @default(ACTIVE)
+  branchId    String?                        // Null = HQ / multi-branch access
+  createdAt   DateTime    @default(now()) @db.Timestamptz
+  updatedAt   DateTime    @updatedAt @db.Timestamptz
+
+  auditLogs AuditLog[]
+
+  @@unique([authIssuer, authSubject])
+  @@index([branchId])
+  @@map("staff_users")
+}
+
+/// Append-only security audit log. Restricted read. Retained per policy.
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorId     String                         // staffUserId or "SYSTEM"
+  actorType   String   @default("STAFF")
+  action      String                         // e.g. "ORDER_CANCEL", "STAFF_SUSPEND"
+  entityType  String
+  entityId    String
+  diff        Json?                          // Redacted before storage
+  ipAddress   String?
+  occurredAt  DateTime @default(now()) @db.Timestamptz
+
+  actor StaffUser? @relation(fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([occurredAt])
+  @@map("audit_logs")
+}
+
+/// Transactional outbox — written atomically with business records.
+model OutboxEvent {
+  id          String       @id @default(uuid())
+  topic       String                         // Event type e.g. "order.created"
+  payload     Json
+  status      OutboxStatus @default(PENDING)
+  retries     Int          @default(0)
+  maxRetries  Int          @default(5)
+  lastAttempt DateTime?    @db.Timestamptz
+  createdAt   DateTime     @default(now()) @db.Timestamptz
+
+  @@index([status, createdAt])
+  @@map("outbox_events")
+}
+
+/// Webhook inbox — unique per provider+eventId to prevent replay.
+model WebhookInbox {
+  id            String   @id @default(uuid())
+  provider      String
+  externalEventId String
+  topic         String
+  payload       Json
+  verified      Boolean  @default(false)    // Signature verified before processing
+  processedAt   DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+
+  @@unique([provider, externalEventId])
+  @@index([provider, processedAt])
+  @@map("webhook_inbox")
+}
+
+/// Idempotency keys — prevent duplicate request processing.
+model IdempotencyKey {
+  id          String   @id @default(uuid())
+  scope       String                         // e.g. "api", "worker"
+  key         String
+  requestHash String                         // SHA-256 of canonical request body
+  resultRef   String?                        // Reference to result entity
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  expiresAt   DateTime @db.Timestamptz
+
+  @@unique([scope, key])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+/// Notification delivery record.
+model NotificationDelivery {
+  id          String   @id @default(uuid())
+  eventRef    String                         // e.g. orderId
+  channel     String                         // "EMAIL", "SMS", "PUSH"
+  recipient   String                         // Email/phone/deviceId
+  templateId  String
+  status      String   @default("PENDING")  // "PENDING", "SENT", "FAILED"
+  sentAt      DateTime? @db.Timestamptz
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+
+  @@unique([eventRef, channel, recipient, templateId])
+  @@index([status, createdAt])
+  @@map("notification_deliveries")
+}
+
+/// API integration credentials — reference to secret manager only.
+model ApiIntegrationCredential {
+  id           String   @id @default(uuid())
+  provider     String   @unique
+  secretRef    String                         // Key name in secret manager; no plaintext
+  environment  String   @default("production")
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
+
+  @@map("api_integration_credentials")
+}
+
+/// Scheduled job registry.
+model ScheduledJob {
+  id              String    @id @default(uuid())
+  logicalKey      String    @unique
+  cronExpression  String
+  handler         String
+  isActive        Boolean   @default(true)
+  lastRunAt       DateTime? @db.Timestamptz
+  nextRunAt       DateTime? @db.Timestamptz
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @db.Timestamptz
+
+  attempts IntegrationAttempt[]
+
+  @@map("scheduled_jobs")
+}
+
+/// Integration attempt log — redacted payloads.
+model IntegrationAttempt {
+  id              String    @id @default(uuid())
+  jobId           String?
+  provider        String
+  action          String
+  status          String    @default("PENDING") // "PENDING", "SUCCESS", "FAILED", "RETRYING"
+  retries         Int       @default(0)
+  requestPayload  Json?                          // Redacted sensitive fields
+  responsePayload Json?                          // Redacted sensitive fields
+  error           String?
+  attemptedAt     DateTime  @default(now()) @db.Timestamptz
+
+  job ScheduledJob? @relation(fields: [jobId], references: [id])
+
+  @@index([status, attemptedAt])
+  @@index([jobId])
+  @@map("integration_attempts")
+}
+
+/// Reconciliation run — tracks financial reconciliation between internal and provider.
+model ReconciliationRun {
+  id                  String   @id @default(uuid())
+  provider            String
+  periodStart         DateTime @db.Timestamptz
+  periodEnd           DateTime @db.Timestamptz
+  discrepanciesJson   Json?
+  reviewed            Boolean  @default(false)
+  reviewedBy          String?
+  reviewedAt          DateTime? @db.Timestamptz
+  createdAt           DateTime  @default(now()) @db.Timestamptz
+
+  @@index([provider, periodStart])
+  @@map("reconciliation_runs")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCHEMA META (required for prisma generate without generate step)
+// ═══════════════════════════════════════════════════════════════════════════════
 
 model _SchemaMeta {
   id        String   @id @default(uuid())
   key       String   @unique
   value     String
   createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@map("_schema_meta")
 }

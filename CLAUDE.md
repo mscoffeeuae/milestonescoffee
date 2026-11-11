@@ -11,9 +11,9 @@ Read this file at the start of every session before making any change.
 |---|---|
 | Project | Milestones Coffee 2.0 — Option C Complete Digital Coffee Platform |
 | Brief | `docs/PRD.md` and all files under `docs/` |
-| Status | **Prompt 4 complete — Sanity CMS schemas + Phase 1 public pages** |
+| Status | **Prompt 5 complete — Full Prisma schema + API auth stubs** |
 | Current phase | Phase 1 preparation |
-| Next increment | Prompt 5 — Database identity and authorization (Prisma schema) |
+| Next increment | Prompt 6 — Branch catalog, cart, and pricing (NestJS feature modules) |
 
 ---
 
