@@ -11,9 +11,9 @@ Read this file at the start of every session before making any change.
 |---|---|
 | Project | Milestones Coffee 2.0 — Option C Complete Digital Coffee Platform |
 | Brief | `docs/PRD.md` and all files under `docs/` |
-| Status | **Prompt 2 in progress — monorepo scaffold, all version pins decided** |
-| Current phase | Discovery → Phase 1 preparation |
-| Next increment | Prompt 3 — Bilingual design system and public shell |
+| Status | **Prompt 3 complete — design system + public shell** |
+| Current phase | Phase 1 preparation |
+| Next increment | Prompt 4 — Editorial content and public discovery (Sanity schemas) |
 
 ---
 

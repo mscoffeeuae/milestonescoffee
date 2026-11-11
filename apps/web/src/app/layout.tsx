@@ -1,20 +1,24 @@
-/**
- * Root layout — minimal shell.
- * Full bilingual layout with RTL support implemented in Prompt 3.
- */
 import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Milestones Coffee',
+    template: '%s — Milestones Coffee',
     default: 'Milestones Coffee',
   },
-  description: '[PLACEHOLDER — requires Marketing-approved copy]',
+  description: 'Milestones Coffee — specialty coffee across the UAE',
+  // ⚠ Update with approved brand description in en and ar before launch
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
+    // lang and dir are set per-locale in [locale]/layout.tsx
+    // Root layout has no lang attribute to avoid hydration mismatch
+    <html suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

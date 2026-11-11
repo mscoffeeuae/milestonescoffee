@@ -1,14 +1,26 @@
 /**
- * @milestones/ui — Shared React component library
+ * @milestones/ui — Shared component library
  *
- * Full component library implemented in Prompt 3 (Bilingual design system).
- * This stub establishes the package boundary and exports placeholder types.
+ * Dependency boundary: web and admin apps may import from here.
+ * api and worker must NOT import UI components.
  *
- * Safe to import from: web, admin
- * Must NOT import: database, api internals
+ * All components target WCAG 2.2 AA accessibility.
  */
 
-export type { Locale } from '@milestones/i18n';
+// Utilities
+export { cn } from './lib/utils.js';
 
-// Component library stubs — implemented in Prompt 3
-export * from './components/index.js';
+// Primitives
+export { Button } from './components/primitives/button.js';
+export type { ButtonProps } from './components/primitives/button.js';
+
+export { Input } from './components/primitives/input.js';
+export type { InputProps } from './components/primitives/input.js';
+
+export { Label } from './components/primitives/label.js';
+export type { LabelProps } from './components/primitives/label.js';
+
+// Feedback
+export { Skeleton } from './components/feedback/skeleton.js';
+export { EmptyState } from './components/feedback/empty-state.js';
+export { ErrorState } from './components/feedback/error-state.js';

@@ -1,0 +1,168 @@
+/*
+ * Milestones Coffee 2.0 — Global styles
+ *
+ * ⚠️  BRAND PLACEHOLDER VALUES — all colors, fonts and spacing must be
+ *     replaced with approved brand kit values before public launch.
+ *     See docs/DESIGN_SYSTEM.md and DECISIONS.md for brand inputs required.
+ *
+ * Token names are final; numeric values are directional placeholders only.
+ */
+
+@import "tailwindcss";
+
+/* ─── Design tokens ─────────────────────────────────────────────────────── */
+
+:root {
+  /* Brand palette — PLACEHOLDER until brand kit supplied */
+  --color-brand-espresso:   #3B1F0E;   /* ⚠ placeholder */
+  --color-brand-ivory:      #F5F0E8;   /* ⚠ placeholder */
+  --color-brand-bronze:     #A0784A;   /* ⚠ placeholder */
+  --color-brand-bronze-light: #C9A87C; /* ⚠ placeholder */
+
+  /* Semantic surface tokens */
+  --color-bg-base:          var(--color-brand-ivory);
+  --color-bg-elevated:      #FFFFFF;
+  --color-bg-muted:         #EDE8DF;
+
+  /* Text */
+  --color-text-primary:     var(--color-brand-espresso);
+  --color-text-secondary:   #6B4F3A;
+  --color-text-muted:       #9B8678;
+  --color-text-on-dark:     var(--color-brand-ivory);
+
+  /* Interactive */
+  --color-interactive:      var(--color-brand-bronze);
+  --color-interactive-hover:#8C6540;
+  --color-interactive-focus:#6B4D2E;
+
+  /* Status */
+  --color-success:          #2D7A4A;
+  --color-warning:          #B86A00;
+  --color-error:            #C0392B;
+  --color-info:             #1A5F8A;
+
+  /* Border */
+  --color-border:           #D4C9BB;
+  --color-border-strong:    #A89882;
+
+  /* Focus ring */
+  --color-focus-ring:       var(--color-brand-bronze);
+
+  /* Spacing scale */
+  --spacing-xs:   0.25rem;   /*  4px */
+  --spacing-sm:   0.5rem;    /*  8px */
+  --spacing-md:   1rem;      /* 16px */
+  --spacing-lg:   1.5rem;    /* 24px */
+  --spacing-xl:   2rem;      /* 32px */
+  --spacing-2xl:  3rem;      /* 48px */
+  --spacing-3xl:  4rem;      /* 64px */
+
+  /* Typography — PLACEHOLDER until brand fonts approved */
+  --font-heading: system-ui, sans-serif;  /* ⚠ replace with brand heading font */
+  --font-body:    system-ui, sans-serif;  /* ⚠ replace with brand body font */
+  --font-mono:    ui-monospace, monospace;
+
+  /* Radius */
+  --radius-sm:    0.25rem;
+  --radius-md:    0.5rem;
+  --radius-lg:    0.75rem;
+  --radius-xl:    1rem;
+  --radius-full:  9999px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md:  0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Motion durations */
+  --duration-micro:    150ms;
+  --duration-standard: 250ms;
+  --duration-page:     400ms;
+
+  /* Z-index scale */
+  --z-base:    0;
+  --z-raised:  10;
+  --z-overlay: 100;
+  --z-modal:   200;
+  --z-toast:   300;
+}
+
+/* ─── Base reset and global styles ────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-body);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* RTL direction support */
+[dir="rtl"] {
+  /* Directional overrides are applied via CSS logical properties;
+     most layouts require no extra rules here. */
+}
+
+/* Focus visible — high contrast ring for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  inset-inline-start: -9999px;
+  top: var(--spacing-md);
+  background: var(--color-brand-espresso);
+  color: var(--color-brand-ivory);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  z-index: var(--z-toast);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.skip-to-content:focus {
+  inset-inline-start: var(--spacing-md);
+}
+
+/* ─── Typography ───────────────────────────────────────────────────────────── */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text-primary);
+}
+
+p {
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-interactive);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--color-interactive-hover);
+}
