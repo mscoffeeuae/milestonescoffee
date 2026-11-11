@@ -11,18 +11,157 @@
  *
  * Full schema implemented in Prompt 5. Run `pnpm db:generate` after `docker compose up -d`.
  * The real generated output will replace this file entirely.
+ *
+ * Updated in Prompt 6 to expose stub delegates for all 40+ schema models so
+ * downstream services type-check correctly without the real generated client.
  */
 
-// Stub types that allow downstream imports to compile without the generated client.
-// These will be replaced with the full Prisma-generated types at first `prisma generate`.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyArgs = any;
+
+/** Minimal stub delegate that accepts any query and returns a resolved Promise. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeDelegate(): Record<string, (...args: AnyArgs[]) => Promise<any>> {
+  return new Proxy(
+    {},
+    {
+      get: (_target, _prop) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (..._args: AnyArgs[]) =>
+          Promise.resolve(null),
+    },
+  );
+}
 
 /** @stub — replaced by prisma generate */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class PrismaClient {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(_options?: any) {}
   $connect(): Promise<void> { return Promise.resolve(); }
   $disconnect(): Promise<void> { return Promise.resolve(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  $transaction(arg: any): Promise<any> {
+    if (Array.isArray(arg)) return Promise.resolve([]);
+    return arg(this);
+  }
+
+  // ── Catalog ──────────────────────────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get branch(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get branchHours(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get branchClosure(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get branchService(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get category(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get product(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get productVariant(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get modifierGroup(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get modifierOption(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get productModifierGroup(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get branchProduct(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get inventoryItem(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get productMedia(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get productAllergen(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get integrationMapping(): any { return makeDelegate(); }
+
+  // ── Customer & Commerce ──────────────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get customer(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get customerAddress(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get customerConsent(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get customerDeletionRequest(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get cart(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get cartItem(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get cartItemModifier(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get checkoutQuote(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get order(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get orderItem(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get orderItemModifier(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get orderEvent(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get payment(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get refund(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get inventoryReservation(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get pickupReservation(): any { return makeDelegate(); }
+
+  // ── Loyalty & Corporate ──────────────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get loyaltyAccount(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get loyaltyTransaction(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get loyaltyRule(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get reward(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get redemption(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get giftCard(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get giftCardTransaction(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get promotion(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get promotionRedemption(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get corporateAccount(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get corporateEnquiry(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get corporateQuote(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get subscription(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get subscriptionCycle(): any { return makeDelegate(); }
+
+  // ── Admin & Integration ──────────────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get staffUser(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get auditLog(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get outboxEvent(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get webhookInbox(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get idempotencyKey(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get notificationDelivery(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get apiIntegrationCredential(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get scheduledJob(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get integrationAttempt(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get reconciliationRun(): any { return makeDelegate(); }
 }
 
 /** @stub — replaced by prisma generate */
