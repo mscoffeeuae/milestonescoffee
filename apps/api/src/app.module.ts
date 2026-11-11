@@ -5,6 +5,8 @@ import { AuthModule } from './auth/auth.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
 import { PricingModule } from './pricing/pricing.module.js';
 import { CartModule } from './cart/cart.module.js';
+import { CheckoutModule } from './checkout/checkout.module.js';
+import { PaymentModule } from './payments/payment.module.js';
 
 @Module({
   imports: [
@@ -18,6 +20,10 @@ import { CartModule } from './cart/cart.module.js';
     PricingModule,
     // Cart: guest and customer cart lifecycle
     CartModule,
+    // Checkout: quote creation + order placement (Prompt 7)
+    CheckoutModule,
+    // Payments: gateway stub + refunds (Prompt 7; D-005 pending)
+    PaymentModule,
     // Infrastructure
     HealthModule,
   ],
