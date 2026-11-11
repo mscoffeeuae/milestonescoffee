@@ -11,9 +11,9 @@ Read this file at the start of every session before making any change.
 |---|---|
 | Project | Milestones Coffee 2.0 — Option C Complete Digital Coffee Platform |
 | Brief | `docs/PRD.md` and all files under `docs/` |
-| Status | **Prompt 8 complete — Branch operations, POS, and notifications** |
+| Status | **Prompt 10 complete — Rewards, promotions, and corporate portal** |
 | Current phase | Phase 1 preparation |
-| Next increment | Prompt 9 — Retail shop, gift cards, and customer account |
+| Next increment | Prompt 11 — Advanced experiences and personalization (QR, subscriptions, recommendations) |
 
 ---
 

@@ -13,6 +13,9 @@ import { NotificationModule } from './notifications/notification.module.js';
 import { CustomerModule } from './customers/customer.module.js';
 import { GiftCardModule } from './gift-cards/gift-card.module.js';
 import { ShopModule } from './shop/shop.module.js';
+import { LoyaltyModule } from './loyalty/loyalty.module.js';
+import { PromotionModule } from './promotions/promotion.module.js';
+import { CorporateModule } from './corporate/corporate.module.js';
 
 @Module({
   imports: [
@@ -42,6 +45,12 @@ import { ShopModule } from './shop/shop.module.js';
     GiftCardModule,
     // Online retail shop — merchandise, beans, equipment (Prompt 9)
     ShopModule,
+    // Loyalty: points earn/redeem, rewards (Prompt 10; D-009 pending)
+    LoyaltyModule,
+    // Promotions: coupon validation + order discounts (Prompt 10; D-009 pending)
+    PromotionModule,
+    // Corporate portal: enquiries, quotes, accounts (Prompt 10)
+    CorporateModule,
     // Infrastructure
     HealthModule,
   ],
