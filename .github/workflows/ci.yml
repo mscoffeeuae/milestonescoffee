@@ -7,88 +7,212 @@ on:
     branches: [main, develop]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '22'
-  PNPM_VERSION: '10.28.0'
+  NODE_VERSION: "22"
+  PNPM_VERSION: "10.28.0"
 
 jobs:
-  lint-and-typecheck:
-    name: Lint and type-check
+  # ── 1. Lint + type-check ─────────────────────────────────────────────────
+  lint-typecheck:
+    name: Lint & Type-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm turbo lint
 
       - name: Type-check
-        run: pnpm type-check
+        run: pnpm turbo typecheck
 
+  # ── 2. Unit tests ────────────────────────────────────────────────────────
   test:
-    name: Tests
+    name: Unit Tests
     runs-on: ubuntu-latest
-    needs: lint-and-typecheck
+    needs: lint-typecheck
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Unit tests
-        run: pnpm test:unit
+      - name: Run unit tests
+        run: pnpm turbo test
 
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage
+          path: "**/coverage/"
+          retention-days: 7
+
+  # ── 3. Migration dry-run ─────────────────────────────────────────────────
+  migration-check:
+    name: Migration Dry-run
+    runs-on: ubuntu-latest
+    needs: lint-typecheck
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: milestones
+          POSTGRES_PASSWORD: milestones_ci
+          POSTGRES_DB: milestones_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U milestones"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run migrations against CI database
+        env:
+          DATABASE_URL: postgresql://milestones:milestones_ci@localhost:5432/milestones_ci
+        run: |
+          cd packages/database
+          pnpm prisma migrate deploy
+
+      - name: Verify schema matches migrations
+        env:
+          DATABASE_URL: postgresql://milestones:milestones_ci@localhost:5432/milestones_ci
+        run: |
+          cd packages/database
+          # drift check: schema should match what was migrated
+          pnpm prisma migrate diff \
+            --from-migrations ./prisma/migrations \
+            --to-schema-datamodel ./prisma/schema.prisma \
+            --shadow-database-url postgresql://milestones:milestones_ci@localhost:5432/milestones_ci_shadow \
+            --exit-code || (echo "Schema drift detected — run prisma migrate dev to generate a migration" && exit 1)
+
+  # ── 4. Build ─────────────────────────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, migration-check]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
+      - name: Build all packages and apps
+        run: pnpm turbo build
         env:
-          # Minimal env for build validation — no real secrets
-          DATABASE_URL: postgresql://test:test@localhost:5432/test
-          NEXT_PUBLIC_API_BASE_URL: http://localhost:4000/api/v1
+          NEXT_TELEMETRY_DISABLED: 1
+
+  # ── 5. Docker image builds (main branch only) ────────────────────────────
+  docker-build:
+    name: Docker Build — ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [api, web, admin, worker]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to container registry
+        # Skipped on forks / when secret is absent — image is still built for validation
+        if: ${{ env.REGISTRY_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.IMAGE_REGISTRY }}
+          username: ${{ vars.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+        env:
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Derive image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ vars.IMAGE_REGISTRY }}/milestones/${{ matrix.app }}
+          tags: |
+            type=sha,prefix=git-
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build (and conditionally push) Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: ${{ env.REGISTRY_TOKEN != '' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+        env:
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+
+  # ── 6. Staging deploy gate (main branch only) ────────────────────────────
+  staging-gate:
+    name: Staging Deploy Gate
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    steps:
+      - name: Trigger staging deploy
+        # Replace with your actual deploy mechanism (e.g. SSH exec, k8s rollout, Render/Railway webhook)
+        run: |
+          echo "Staging deploy triggered for SHA ${{ github.sha }}"
+          echo "IMAGE_TAG=git-$(echo ${{ github.sha }} | cut -c1-7)"
+          echo "Replace this step with your actual deploy command."
+          echo "Example: curl -X POST \$DEPLOY_WEBHOOK -d '{\"tag\":\"git-$GITHUB_SHA\"}'"

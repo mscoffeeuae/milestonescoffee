@@ -11,9 +11,9 @@ Read this file at the start of every session before making any change.
 |---|---|
 | Project | Milestones Coffee 2.0 — Option C Complete Digital Coffee Platform |
 | Brief | `docs/PRD.md` and all files under `docs/` |
-| Status | **Prompt 11 complete — Advanced experiences and personalization** |
-| Current phase | Phase 1 preparation |
-| Next increment | Prompt 12 — Release validation, deployment, and handover |
+| Status | **Prompt 12 complete — ALL 12 PROMPTS DELIVERED — Platform scaffold complete** |
+| Current phase | Phase 1 preparation (pending business inputs — see docs/HANDOVER.md) |
+| Next increment | Production deployment (requires D-004 through D-010 resolved) |
 
 ---
 
