@@ -1,0 +1,29 @@
+// Milestones Coffee 2.0 — Prisma Schema
+// Full schema will be implemented in Prompt 5 (Database identity and authorization).
+// This is the foundation stub with conventions established.
+//
+// Conventions:
+//   - Money: integer fils suffix (e.g. priceFils, totalFils). Never Float for money.
+//   - Timestamps: DateTime @db.Timestamptz — always UTC in DB, Asia/Dubai for display.
+//   - IDs: String @id @default(uuid())
+//   - Soft deletes via deletedAt: DateTime? @db.Timestamptz
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Placeholder model to enable prisma generate ──────────────────────────────
+// Full schema implemented in Prompt 5.
+
+model _SchemaMeta {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now()) @db.Timestamptz
+}

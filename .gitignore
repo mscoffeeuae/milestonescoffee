@@ -10,4 +10,8 @@ build/
 *.log
 .DS_Store
 coverage/
+# Prisma generated output (committed as stub only; overwritten by prisma generate)
+# packages/database/src/generated is committed as a stub — see that file for context
 generated/
+!packages/database/src/generated/
+.npmrc-build-approval.json

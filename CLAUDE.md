@@ -11,9 +11,9 @@ Read this file at the start of every session before making any change.
 |---|---|
 | Project | Milestones Coffee 2.0 — Option C Complete Digital Coffee Platform |
 | Brief | `docs/PRD.md` and all files under `docs/` |
-| Status | **Prompt 1 complete — planning documents created, no application code exists** |
-| Current phase | Discovery |
-| Next increment | Prompt 2 — Workspace and delivery foundation |
+| Status | **Prompt 2 in progress — monorepo scaffold, all version pins decided** |
+| Current phase | Discovery → Phase 1 preparation |
+| Next increment | Prompt 3 — Bilingual design system and public shell |
 
 ---
 
@@ -38,22 +38,21 @@ Shared packages: `ui`, `contracts`, `database`, `config`, `i18n`, `utilities`.
 
 ---
 
-## Technology stack (versions TBD — see docs/DECISIONS.md)
+## Technology stack (versions DECIDED — see docs/DECISIONS.md)
 
 | Layer | Technology | Notes |
 |---|---|---|
 | Workspace | pnpm + Turborepo | Shared lockfile |
-| Web/Admin | Next.js App Router + React + TypeScript | Pin before Prompt 2 |
-| UI | Tailwind + shadcn/ui + Motion | |
-| API | NestJS + REST + OpenAPI | |
-| Database | PostgreSQL + Prisma | |
-| CMS | Sanity | |
-| Cache/Jobs | Redis + BullMQ | Never financial authority |
-| Identity | **TBD — see DECISIONS.md** | Customer OTP + Staff MFA |
+| Web/Admin | Next.js 16.4.6 + React 19.3.1 + TypeScript 7.0.2 | ✅ Pinned |
+| UI | Tailwind + shadcn/ui + Motion | Prompt 3 |
+| API | NestJS 12.4.2 + REST + OpenAPI | ✅ Scaffolded |
+| Database | PostgreSQL 17 + Prisma 7.10.1 | Prompt 5 (full schema) |
+| CMS | Sanity 6.23.0 | Prompt 4 (schemas) |
+| Cache/Jobs | Redis 7 + BullMQ 6.7.4 | Never financial authority |
+| Identity | **TBD — see DECISIONS.md D-004** | Customer OTP + Staff MFA |
 | Media | S3-compatible object storage | **Provider TBD** |
-| Observability | Sentry + structured logs | |
-
-**Version pins must be recorded in `docs/DECISIONS.md` before Prompt 2 starts.**
+| Observability | Sentry + structured logs | ✅ Env vars wired |
+| Monorepo | pnpm 10.28.0 + Turborepo 2.11.10 | ✅ Configured |
 
 ---
 

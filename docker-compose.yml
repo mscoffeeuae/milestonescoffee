@@ -1,0 +1,45 @@
+# Milestones Coffee 2.0 — Local development services
+# Run: docker compose up -d
+# Stop: docker compose down
+# Reset: docker compose down -v  (WARNING: destroys local data)
+#
+# This file starts infrastructure services only (database, cache).
+# Application code runs via pnpm dev (see README.md).
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: milestones-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: milestones_dev
+      POSTGRES_USER: milestones
+      POSTGRES_PASSWORD: milestones_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U milestones -d milestones_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: milestones-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
+  redis-data:

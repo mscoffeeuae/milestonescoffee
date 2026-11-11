@@ -1,0 +1,29 @@
+{
+  "name": "@milestones/worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Milestones Coffee — BullMQ background job worker",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "lint": "eslint src",
+    "type-check": "tsc --noEmit",
+    "test:unit": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@milestones/config": "workspace:*",
+    "@milestones/contracts": "workspace:*",
+    "@milestones/database": "workspace:*",
+    "@milestones/utilities": "workspace:*",
+    "bullmq": "6.7.4",
+    "ioredis": "6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.4",
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4"
+  }
+}

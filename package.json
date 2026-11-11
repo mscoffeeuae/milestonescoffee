@@ -1,0 +1,32 @@
+{
+  "name": "milestones-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Milestones Coffee 2.0 — Option C Complete Digital Coffee Platform",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "turbo run test:integration",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\" --ignore-path .gitignore",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "pnpm --filter @milestones/database run migrate",
+    "db:seed": "pnpm --filter @milestones/database run seed"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prettier": "^3.5.3",
+    "turbo": "2.11.10",
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4"
+  }
+}

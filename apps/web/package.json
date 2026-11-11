@@ -1,0 +1,31 @@
+{
+  "name": "@milestones/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Milestones Coffee — Customer-facing Next.js website (bilingual en/ar)",
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --port 3000",
+    "start": "next start --port 3000",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "test:unit": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@milestones/contracts": "workspace:*",
+    "@milestones/i18n": "workspace:*",
+    "@milestones/ui": "workspace:*",
+    "@milestones/utilities": "workspace:*",
+    "@milestones/config": "workspace:*",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@milestones/studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Milestones Coffee — Sanity CMS Studio",
+  "scripts": {
+    "build": "sanity build",
+    "dev": "sanity dev --port 3333",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@sanity/client": "8.15.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "sanity": "6.23.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "7.0.2"
+  }
+}

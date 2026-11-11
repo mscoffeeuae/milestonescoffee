@@ -1,0 +1,25 @@
+{
+  "name": "@milestones/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared Zod schemas, TypeScript types and API contracts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src",
+    "test:unit": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vitest": "^3.2.4"
+  }
+}

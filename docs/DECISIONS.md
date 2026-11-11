@@ -145,54 +145,60 @@
 
 ---
 
-## Technology version decisions (OPEN — resolve before Prompt 2)
+## Technology version decisions (DECIDED — resolved in Prompt 2)
 
 ### D-V-001 — Node.js version
-**Status:** OPEN  
-**Action:** Check LTS releases; prefer current LTS  
-**Source:** https://nodejs.org/en/about/previous-releases
+**Status:** DECIDED  
+**Decision:** Node.js 22.x LTS (22.23.4 confirmed available)  
+**Source:** Verified in environment — `node --version`
 
 ### D-V-002 — Next.js version
-**Status:** OPEN  
-**Note:** Project report mentioned 16.x as a planning baseline — treat as a planning estimate, not a verified version. Next.js versioning is currently at 14.x/15.x; verify current stable release.  
-**Action:** Verify current stable release; pin tested version  
-**Source:** https://nextjs.org/docs
+**Status:** DECIDED  
+**Decision:** Next.js 16.4.6 (npm `latest` tag as of 2026-11-11)  
+**Note:** Project report's "16.x" estimate was correct — 16.x is the current stable series.  
+**Source:** npm registry dist-tags verified
 
 ### D-V-003 — NestJS version
-**Status:** OPEN  
-**Action:** Verify current stable version compatible with chosen Node.js version  
-**Source:** https://docs.nestjs.com
+**Status:** DECIDED  
+**Decision:** NestJS 12.4.2 (npm `latest` tag as of 2026-11-11)  
+**Source:** npm registry dist-tags verified
 
 ### D-V-004 — Prisma version
-**Status:** OPEN  
-**Action:** Verify current stable version; check PostgreSQL driver compatibility  
-**Source:** https://www.prisma.io/docs
+**Status:** DECIDED  
+**Decision:** Prisma 7.10.1 (`prev` tag — stable; 8.x is still in RC as of 2026-11-11)  
+**Rationale:** 8.0.0-rc.33 is the `latest` npm tag but labeled RC in version string; using last stable 7.x.  
+**Source:** npm registry dist-tags verified
 
 ### D-V-005 — PostgreSQL version
-**Status:** OPEN  
-**Action:** Verify version supported by chosen hosting provider  
-**Source:** Hosting provider documentation
+**Status:** DECIDED  
+**Decision:** PostgreSQL 17 (docker image `postgres:17-alpine`)  
+**Note:** Subject to hosting provider support — confirm before production deployment.  
+**Source:** docker-compose.yml
 
 ### D-V-006 — Sanity version
-**Status:** OPEN  
-**Action:** Verify current Sanity Studio and SDK versions  
-**Source:** https://www.sanity.io/docs
+**Status:** DECIDED  
+**Decision:** sanity@6.23.0, @sanity/client@8.15.1 (npm `latest` tags as of 2026-11-11)  
+**Source:** npm registry dist-tags verified
 
 ### D-V-007 — React version
-**Status:** OPEN  
-**Action:** Align with chosen Next.js version requirements
+**Status:** DECIDED  
+**Decision:** React 19.3.1 (required by Next.js 16.x)  
+**Source:** npm registry dist-tags verified
 
 ### D-V-008 — TypeScript version
-**Status:** OPEN  
-**Action:** Verify compatibility with chosen Next.js and NestJS versions
+**Status:** DECIDED  
+**Decision:** TypeScript 7.0.2 (npm `latest` tag as of 2026-11-11)  
+**Source:** npm registry dist-tags verified
 
 ### D-V-009 — Redis version
-**Status:** OPEN  
-**Action:** Verify version supported by chosen hosting; BullMQ compatibility
+**Status:** DECIDED  
+**Decision:** Redis 7 (docker image `redis:7-alpine`), ioredis@6.0.0, BullMQ@6.7.4  
+**Source:** docker-compose.yml + npm registry
 
 ### D-V-010 — pnpm and Turborepo versions
-**Status:** OPEN  
-**Action:** Use current stable versions; verify workspace protocol support
+**Status:** DECIDED  
+**Decision:** pnpm@10.28.0 (installed), Turborepo@2.11.10 (npm `latest` tag)  
+**Source:** Environment verified + npm registry
 
 ---
 
@@ -203,3 +209,4 @@
 | 2026-11-11 | D-001 | Recorded from project report |
 | 2026-11-11 | D-002 | Recorded from project report |
 | 2026-11-11 | D-003 to D-V-010 | Opened during Prompt 1 discovery |
+| 2026-11-11 | D-V-001 to D-V-010 | Resolved during Prompt 2 — all version pins decided |
