@@ -10,6 +10,9 @@ import { PaymentModule } from './payments/payment.module.js';
 import { AdminOrdersModule } from './admin/orders/admin-orders.module.js';
 import { PosModule } from './pos/pos.module.js';
 import { NotificationModule } from './notifications/notification.module.js';
+import { CustomerModule } from './customers/customer.module.js';
+import { GiftCardModule } from './gift-cards/gift-card.module.js';
+import { ShopModule } from './shop/shop.module.js';
 
 @Module({
   imports: [
@@ -33,6 +36,12 @@ import { NotificationModule } from './notifications/notification.module.js';
     PosModule,
     // Notification delivery records — worker handles actual sending (Prompt 8)
     NotificationModule,
+    // Customer profile, addresses, order history (Prompt 9)
+    CustomerModule,
+    // Gift card issuance, balance, redemption (Prompt 9; D-010 pending)
+    GiftCardModule,
+    // Online retail shop — merchandise, beans, equipment (Prompt 9)
+    ShopModule,
     // Infrastructure
     HealthModule,
   ],
