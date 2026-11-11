@@ -52,7 +52,7 @@ Shared packages: `ui`, `contracts`, `database`, `config`, `i18n`, `utilities`.
 | Identity | **TBD — see DECISIONS.md D-004** | Customer OTP + Staff MFA |
 | Media | S3-compatible object storage | **Provider TBD** |
 | Observability | Sentry + structured logs | ✅ Env vars wired |
-| Monorepo | pnpm 10.28.0 + Turborepo 2.11.10 | ✅ Configured |
+| Monorepo | pnpm 12.18.0 + Turborepo 2.11.10 | ✅ Configured |
 
 ---
 
