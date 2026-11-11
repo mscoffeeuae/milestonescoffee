@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+.turbo/
+dist/
+build/
+.next/
+.sanity/
+*.log
+.DS_Store
+coverage/
+generated/
