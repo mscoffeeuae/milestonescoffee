@@ -141,6 +141,16 @@ export class PrismaClient {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get subscriptionCycle(): any { return makeDelegate(); }
 
+  // ── Advanced Experiences (Prompt 11) ────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get branchFeatureFlag(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get qrCode(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get qrCodeScanLog(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get recommendationEvent(): any { return makeDelegate(); }
+
   // ── Admin & Integration ──────────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get staffUser(): any { return makeDelegate(); }
@@ -163,6 +173,30 @@ export class PrismaClient {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get reconciliationRun(): any { return makeDelegate(); }
 }
+
+/** Enum stubs — replaced by prisma generate */
+export const QrCodeType = {
+  TABLE_ORDER: 'TABLE_ORDER',
+  LOYALTY_CHECKIN: 'LOYALTY_CHECKIN',
+  PROMOTION: 'PROMOTION',
+  TAKEAWAY_PICKUP: 'TAKEAWAY_PICKUP',
+} as const;
+export type QrCodeType = typeof QrCodeType[keyof typeof QrCodeType];
+
+export const QrCodeStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  EXPIRED: 'EXPIRED',
+} as const;
+export type QrCodeStatus = typeof QrCodeStatus[keyof typeof QrCodeStatus];
+
+export const RecommendationEventType = {
+  VIEW: 'VIEW',
+  ADD_TO_CART: 'ADD_TO_CART',
+  PURCHASE: 'PURCHASE',
+  SKIP: 'SKIP',
+} as const;
+export type RecommendationEventType = typeof RecommendationEventType[keyof typeof RecommendationEventType];
 
 /** @stub — replaced by prisma generate */
 // eslint-disable-next-line @typescript-eslint/no-namespace

@@ -118,6 +118,26 @@ enum CorporateQuoteStatus {
   EXPIRED
 }
 
+enum QrCodeType {
+  TABLE_ORDER         // Scan to order at a table
+  LOYALTY_CHECKIN     // Scan to earn loyalty points
+  PROMOTION           // Scan to apply a promotion code
+  TAKEAWAY_PICKUP     // Scan to confirm takeaway pickup
+}
+
+enum QrCodeStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+enum RecommendationEventType {
+  VIEW        // Customer viewed a product
+  ADD_TO_CART // Customer added product to cart
+  PURCHASE    // Customer purchased product
+  SKIP        // Customer explicitly skipped / removed
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. CATALOG
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -142,6 +162,8 @@ model Branch {
   branchProducts   BranchProduct[]
   pickupReservations PickupReservation[]
   orders           Order[]
+  featureFlags     BranchFeatureFlag[]
+  qrCodes          QrCode[]
 
   @@map("branches")
 }
@@ -939,6 +961,83 @@ model Subscription {
 
   @@index([customerId])
   @@map("subscriptions")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 3b. ADVANCED EXPERIENCES — QR CODES, FEATURE FLAGS, RECOMMENDATIONS
+//     (Prompt 11; all gated behind BranchFeatureFlag)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Per-branch feature flags — all Phase 2+ features default to disabled.
+/// Only api/worker may mutate; web/admin read via contracts package DTOs.
+model BranchFeatureFlag {
+  id        String   @id @default(uuid())
+  branchId  String
+  flag      String                             // e.g. "ordering", "loyalty", "subscriptions", "qr_ordering", "recommendations"
+  enabled   Boolean  @default(false)
+  setByStaffId String?
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@unique([branchId, flag])
+  @@index([branchId])
+  @@map("branch_feature_flags")
+}
+
+/// QR code entity — table-side, loyalty check-in, promotions, pickup confirm.
+model QrCode {
+  id          String       @id @default(uuid())
+  branchId    String
+  type        QrCodeType
+  status      QrCodeStatus @default(ACTIVE)
+  /// Opaque token embedded in the QR — URL-safe base64, 32 bytes entropy.
+  token       String       @unique
+  /// Semantic reference: tableNumber, promotionId, etc. (nullable)
+  referenceId String?
+  /// Label shown in admin (e.g. "Table 4", "Summer Promo")
+  label       String?
+  expiresAt   DateTime?    @db.Timestamptz
+  createdAt   DateTime     @default(now()) @db.Timestamptz
+  updatedAt   DateTime     @updatedAt @db.Timestamptz
+
+  branch   Branch         @relation(fields: [branchId], references: [id])
+  scanLogs QrCodeScanLog[]
+
+  @@index([branchId, type])
+  @@index([token])
+  @@map("qr_codes")
+}
+
+/// Immutable scan log — one row per scan event.
+model QrCodeScanLog {
+  id          String   @id @default(uuid())
+  qrCodeId    String
+  customerId  String?                          // Null for unauthenticated scans
+  scannedAt   DateTime @default(now()) @db.Timestamptz
+  userAgent   String?
+  ipHash      String?                          // SHA-256 of IP — no raw IP stored
+
+  qrCode QrCode @relation(fields: [qrCodeId], references: [id])
+
+  @@index([qrCodeId, scannedAt])
+  @@map("qr_code_scan_logs")
+}
+
+/// Behavioural event for the recommendations engine.
+/// Append-only; never updated or deleted (GDPR deletion via CustomerDeletionRequest).
+model RecommendationEvent {
+  id          String                  @id @default(uuid())
+  customerId  String
+  productId   String
+  branchId    String?
+  eventType   RecommendationEventType
+  occurredAt  DateTime                @default(now()) @db.Timestamptz
+
+  @@index([customerId, occurredAt])
+  @@index([productId, eventType])
+  @@map("recommendation_events")
 }
 
 /// One billing cycle of a subscription.

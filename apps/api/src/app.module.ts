@@ -16,6 +16,10 @@ import { ShopModule } from './shop/shop.module.js';
 import { LoyaltyModule } from './loyalty/loyalty.module.js';
 import { PromotionModule } from './promotions/promotion.module.js';
 import { CorporateModule } from './corporate/corporate.module.js';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module.js';
+import { QrModule } from './qr/qr.module.js';
+import { SubscriptionModule } from './subscriptions/subscription.module.js';
+import { RecommendationModule } from './recommendations/recommendation.module.js';
 
 @Module({
   imports: [
@@ -51,6 +55,14 @@ import { CorporateModule } from './corporate/corporate.module.js';
     PromotionModule,
     // Corporate portal: enquiries, quotes, accounts (Prompt 10)
     CorporateModule,
+    // Feature flags: per-branch on/off switches (Prompt 11)
+    FeatureFlagsModule,
+    // QR codes: table-side, loyalty check-in, promotions (Prompt 11; flag-gated)
+    QrModule,
+    // Subscriptions: coffee bundle plans, billing cycles (Prompt 11; D-011/D-012 pending)
+    SubscriptionModule,
+    // Recommendations: behavioural events + popular items (Prompt 11; D-013 pending)
+    RecommendationModule,
     // Infrastructure
     HealthModule,
   ],

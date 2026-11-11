@@ -20,3 +20,5 @@
 export { PrismaClient } from './generated/index.js';
 export { db, disconnect } from './client.js';
 export type { Prisma } from './generated/index.js';
+// Enum exports (Prompt 11: QR codes, recommendations)
+export { QrCodeType, QrCodeStatus, RecommendationEventType } from './generated/index.js';
