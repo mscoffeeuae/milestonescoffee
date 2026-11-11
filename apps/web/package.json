@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@milestones/config": "workspace:*",
+    "@sanity/client": "8.15.1",
     "@milestones/contracts": "workspace:*",
     "@milestones/i18n": "workspace:*",
     "@milestones/ui": "workspace:*",

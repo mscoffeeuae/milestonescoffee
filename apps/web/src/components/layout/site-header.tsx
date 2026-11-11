@@ -1,9 +1,8 @@
 import type { Locale } from '@milestones/contracts';
-import type { TranslationDict } from '@milestones/i18n';
+import { getDict } from '@milestones/i18n';
 
 interface SiteHeaderProps {
   locale: Locale;
-  dict: TranslationDict;
 }
 
 /** Locale switcher — links between /en and /ar */
@@ -35,7 +34,8 @@ function LocaleSwitcher({ locale }: { locale: Locale }) {
  * ⚠ PLACEHOLDER — Navigation links require approved information architecture.
  *   Logo requires brand kit approval before display.
  */
-export function SiteHeader({ locale, dict }: SiteHeaderProps) {
+export function SiteHeader({ locale }: SiteHeaderProps) {
+  const dict = getDict(locale);
   return (
     <header
       role="banner"

@@ -11,9 +11,9 @@ Read this file at the start of every session before making any change.
 |---|---|
 | Project | Milestones Coffee 2.0 — Option C Complete Digital Coffee Platform |
 | Brief | `docs/PRD.md` and all files under `docs/` |
-| Status | **Prompt 3 complete — design system + public shell** |
+| Status | **Prompt 4 complete — Sanity CMS schemas + Phase 1 public pages** |
 | Current phase | Phase 1 preparation |
-| Next increment | Prompt 4 — Editorial content and public discovery (Sanity schemas) |
+| Next increment | Prompt 5 — Database identity and authorization (Prisma schema) |
 
 ---
 

@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
 import type { Locale } from '@milestones/contracts';
-import { getDict } from '@milestones/i18n';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 
@@ -14,14 +13,12 @@ export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params;
   if (!supportedLocales.includes(locale as Locale)) notFound();
 
-  const dict = getDict(locale as Locale);
-
   return (
     <>
       <a href="#main-content" className="skip-to-content">
         {locale === 'ar' ? 'انتقل إلى المحتوى الرئيسي' /* [PLACEHOLDER] */ : 'Skip to main content'}
       </a>
-      <SiteHeader locale={locale as Locale} dict={dict} />
+      <SiteHeader locale={locale as Locale} />
       <main id="main-content">
         {/* Hero section — content requires approved copy and imagery */}
         <section
@@ -75,7 +72,7 @@ export default async function HomePage({ params }: HomePageProps) {
           </p>
         </section>
       </main>
-      <SiteFooter locale={locale as Locale} dict={dict} />
+      <SiteFooter locale={locale as Locale} />
     </>
   );
 }

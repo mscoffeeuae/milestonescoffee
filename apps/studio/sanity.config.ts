@@ -1,10 +1,24 @@
 /**
- * Sanity Studio configuration.
- * Full schemas implemented in Prompt 4 (editorial content and public discovery).
- * Project ID and dataset configured via environment variables.
+ * Sanity Studio configuration — Milestones Coffee 2.0
+ *
+ * Project ID and dataset are configured via environment variables.
+ * See apps/studio/.env.example for required variables.
  */
 import { defineConfig } from 'sanity';
 import { structureTool } from 'sanity/structure';
+import { visionTool } from '@sanity/vision';
+
+// Object types
+import { bilingualText, seoMetadata, openingHours } from './src/schemas/objects';
+
+// Document types
+import {
+  branch,
+  menuCategory,
+  menuProduct,
+  offer,
+  corporatePage,
+} from './src/schemas/documents';
 
 const projectId = process.env['SANITY_STUDIO_PROJECT_ID'] ?? '';
 const dataset = process.env['SANITY_STUDIO_DATASET'] ?? 'production';
@@ -20,9 +34,50 @@ export default defineConfig({
   title: 'Milestones Coffee CMS',
   projectId,
   dataset,
-  plugins: [structureTool()],
-  // Full schema registered in Prompt 4
+
+  plugins: [
+    structureTool({
+      structure: (S) =>
+        S.list()
+          .title('Content')
+          .items([
+            // Singleton — one document per type
+            S.listItem()
+              .title('Corporate Page')
+              .id('corporatePage')
+              .child(
+                S.document()
+                  .schemaType('corporatePage')
+                  .documentId('corporatePage-singleton'),
+              ),
+
+            S.divider(),
+
+            // Collections
+            S.documentTypeListItem('branch').title('Branches'),
+            S.documentTypeListItem('menuCategory').title('Menu Categories'),
+            S.documentTypeListItem('menuProduct').title('Menu Products'),
+            S.documentTypeListItem('offer').title('Offers & Promotions'),
+          ]),
+    }),
+
+    // Vision tool for GROQ query testing — disabled in production builds
+    ...(process.env['SANITY_STUDIO_ENABLE_VISION'] === 'true' ? [visionTool()] : []),
+  ],
+
   schema: {
-    types: [],
+    types: [
+      // Objects
+      bilingualText,
+      seoMetadata,
+      openingHours,
+
+      // Documents
+      branch,
+      menuCategory,
+      menuProduct,
+      offer,
+      corporatePage,
+    ],
   },
 });

@@ -1,9 +1,7 @@
 import type { Locale } from '@milestones/contracts';
-import type { TranslationDict } from '@milestones/i18n';
 
 interface SiteFooterProps {
   locale: Locale;
-  dict: TranslationDict;
 }
 
 /**
@@ -12,7 +10,7 @@ interface SiteFooterProps {
  * ⚠ PLACEHOLDER — footer links, legal copy, and social links require
  *   Marketing and Legal approval before launch.
  */
-export function SiteFooter({ locale, dict: _dict }: SiteFooterProps) {
+export function SiteFooter({ locale }: SiteFooterProps) {
   const year = new Date().getFullYear();
 
   return (
