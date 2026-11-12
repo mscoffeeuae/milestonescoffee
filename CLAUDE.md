@@ -44,6 +44,7 @@ Shared packages: `ui`, `contracts`, `database`, `config`, `i18n`, `utilities`.
 |---|---|---|
 | Workspace | pnpm + Turborepo | Shared lockfile |
 | Web/Admin | Next.js 16.4.6 + React 19.3.1 + TypeScript 7.0.2 | ✅ Pinned |
+| API/Worker | NestJS 12.4.2 + TypeScript ^6.0.0 | TS 7.0 dropped programmatic compiler API (returns in 7.1); NestJS requires ^6 |
 | UI | Tailwind + shadcn/ui + Motion | Prompt 3 |
 | API | NestJS 12.4.2 + REST + OpenAPI | ✅ Scaffolded |
 | Database | PostgreSQL 17 + Prisma 7.10.1 | Prompt 5 (full schema) |

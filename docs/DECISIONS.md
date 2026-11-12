@@ -187,8 +187,9 @@
 
 ### D-V-008 — TypeScript version
 **Status:** DECIDED  
-**Decision:** TypeScript 7.0.2 (npm `latest` tag as of 2026-11-11)  
-**Source:** npm registry dist-tags verified
+**Decision:** TypeScript 7.0.2 for `web`, `admin`, `studio`; `^6.0.0` for `api` and `worker`  
+**Reason:** NestJS 12 uses TypeScript's programmatic compiler API which TS 7.0 removed (restored in 7.1). Downgraded api/worker to ^6 until NestJS 12 drops the dependency or TS 7.1 ships.  
+**Source:** npm registry + NestJS 12 runtime error 2026-11-12
 
 ### D-V-009 — Redis version
 **Status:** DECIDED  
