@@ -5,7 +5,7 @@
   "description": "Milestones Coffee — Sanity CMS Studio",
   "scripts": {
     "build": "sanity build",
-    "dev": "sanity dev --port 3334",
+    "dev": "sanity dev --port 3335",
     "type-check": "tsc --noEmit",
     "lint": "eslint src"
   },
