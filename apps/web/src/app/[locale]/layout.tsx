@@ -22,11 +22,34 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!supportedLocales.includes(locale as Locale)) return {};
 
-  const dict = getDict(locale as Locale);
+  const isAr = locale === 'ar';
+
   return {
     title: {
-      template: `%s — ${dict.nav.menu}`,
+      template: `%s — Milestones Coffee`,
       default: 'Milestones Coffee',
+    },
+    description: isAr
+      ? 'اكتشف أفضل مقاهي أبوظبي في ميلستونز كوفي — ٣٠+ فرعاً في أبوظبي والعين'
+      : "Discover Abu Dhabi's top cafés at Milestones Coffee. Enjoy the best coffee experience with 30+ branches across Abu Dhabi & Al-Ain.",
+    openGraph: {
+      siteName: 'Milestones Coffee',
+      type: 'website',
+      images: [
+        {
+          url: 'https://milestonescoffee.ae/wp-content/uploads/2024/11/mile_logo.png',
+          width: 400,
+          height: 120,
+          alt: 'Milestones Coffee',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary',
+      site: '@milestones_coffee',
+    },
+    alternates: {
+      languages: { en: '/en', ar: '/ar' },
     },
   };
 }
