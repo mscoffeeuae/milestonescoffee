@@ -12,6 +12,8 @@
 import { loadEnvFile } from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import pg from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from './generated/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -21,19 +23,21 @@ try {
   // .env may not exist in CI
 }
 
-const prisma = new PrismaClient()
+const pool = new pg.Pool({ connectionString: process.env['DATABASE_URL'] })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
   console.log('🌱 Seeding database...')
 
   // --- Schema metadata ---
-  await prisma.schemaMeta.upsert({
+  await (prisma as any).schemaMeta.upsert({
     where: { key: 'schema_version' },
     update: { value: '1.0.0' },
     create: { key: 'schema_version', value: '1.0.0' },
   })
 
-  await prisma.schemaMeta.upsert({
+  await (prisma as any).schemaMeta.upsert({
     where: { key: 'seed_env' },
     update: { value: process.env['NODE_ENV'] ?? 'development' },
     create: { key: 'seed_env', value: process.env['NODE_ENV'] ?? 'development' },
@@ -52,4 +56,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect()
+    await pool.end()
   })
