@@ -1,4 +1,10 @@
 import 'reflect-metadata';
+import { loadEnvFile } from 'node:process';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+try { loadEnvFile(resolve(__dirname, '../../../.env')); } catch { /* CI */ }
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { parseApiEnv } from '@milestones/config';

@@ -11,6 +11,13 @@
  *   - reconciliation      Payment and order reconciliation
  */
 
+import { loadEnvFile } from 'node:process';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+try { loadEnvFile(resolve(__dirname, '../../../.env')); } catch { /* CI */ }
+
 import { parseApiEnv } from '@milestones/config';
 
 async function start() {
