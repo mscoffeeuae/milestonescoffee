@@ -172,6 +172,8 @@ export class PrismaClient {
   get integrationAttempt(): any { return makeDelegate(); }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get reconciliationRun(): any { return makeDelegate(); }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get schemaMeta(): any { return makeDelegate(); }
 }
 
 /** Enum stubs — replaced by prisma generate */

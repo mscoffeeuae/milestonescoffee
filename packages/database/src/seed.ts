@@ -31,13 +31,13 @@ async function main() {
   console.log('🌱 Seeding database...')
 
   // --- Schema metadata ---
-  await (prisma as any).schemaMeta.upsert({
+  await prisma.schemaMeta.upsert({
     where: { key: 'schema_version' },
     update: { value: '1.0.0' },
     create: { key: 'schema_version', value: '1.0.0' },
   })
 
-  await (prisma as any).schemaMeta.upsert({
+  await prisma.schemaMeta.upsert({
     where: { key: 'seed_env' },
     update: { value: process.env['NODE_ENV'] ?? 'development' },
     create: { key: 'seed_env', value: process.env['NODE_ENV'] ?? 'development' },
