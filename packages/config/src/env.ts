@@ -1,10 +1,23 @@
 import { z } from 'zod';
 
+/**
+ * Coerce empty strings to undefined so optional URL/email fields
+ * set to "" in .env don't fail Zod validation.
+ */
+const optionalUrl = z.preprocess(
+  (v) => (v === '' ? undefined : v),
+  z.string().url().optional(),
+);
+const optionalEmail = z.preprocess(
+  (v) => (v === '' ? undefined : v),
+  z.string().email().optional(),
+);
+
 /** Base environment schema — common to all apps */
 const BaseEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-  SENTRY_DSN: z.string().url().optional(),
+  SENTRY_DSN: optionalUrl,
   SENTRY_ENVIRONMENT: z.string().default('development'),
 });
 
@@ -14,9 +27,9 @@ const ApiEnvSchema = BaseEnvSchema.extend({
   API_BASE_URL: z.string().url().default('http://localhost:4000'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   REDIS_URL: z.string().min(1, 'REDIS_URL is required').default('redis://localhost:6379'),
-  AUTH_ISSUER_URL: z.string().url().optional(),
+  AUTH_ISSUER_URL: optionalUrl,
   AUTH_AUDIENCE: z.string().optional(),
-  AUTH_JWKS_URI: z.string().url().optional(),
+  AUTH_JWKS_URI: optionalUrl,
   SANITY_PROJECT_ID: z.string().optional(),
   SANITY_DATASET: z.string().default('production'),
   SANITY_API_TOKEN: z.string().optional(),
@@ -27,11 +40,11 @@ const ApiEnvSchema = BaseEnvSchema.extend({
   PAYMENT_WEBHOOK_SECRET: z.string().optional(),
   // POS (TBD — keep optional until D-006 resolved)
   POS_PROVIDER: z.string().optional(),
-  POS_API_URL: z.string().url().optional(),
+  POS_API_URL: optionalUrl,
   POS_API_KEY: z.string().optional(),
   POS_WEBHOOK_SECRET: z.string().optional(),
   // Object storage (TBD)
-  S3_ENDPOINT: z.string().url().optional(),
+  S3_ENDPOINT: optionalUrl,
   S3_BUCKET: z.string().optional(),
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
@@ -39,7 +52,7 @@ const ApiEnvSchema = BaseEnvSchema.extend({
   // Notifications (TBD)
   NOTIFICATIONS_PROVIDER: z.string().optional(),
   NOTIFICATIONS_API_KEY: z.string().optional(),
-  NOTIFICATIONS_FROM_EMAIL: z.string().email().optional(),
+  NOTIFICATIONS_FROM_EMAIL: optionalEmail,
   NOTIFICATIONS_FROM_PHONE: z.string().optional(),
   // Feature flags
   FEATURE_ORDERING_ENABLED: z

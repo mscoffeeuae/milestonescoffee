@@ -43,7 +43,7 @@ function detectLocale(request: NextRequest): Locale {
  * - Paths with valid locale prefix → pass through unchanged
  * - Static assets and API routes → skip
  */
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
   // Skip Next.js internals and static assets
