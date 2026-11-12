@@ -5,8 +5,8 @@
   "description": "Milestones Coffee — Customer-facing Next.js website (bilingual en/ar)",
   "scripts": {
     "build": "next build",
-    "dev": "next dev --port 3002",
-    "start": "next start --port 3002",
+    "dev": "next dev --port 3003",
+    "start": "next start --port 3003",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test:unit": "vitest run --passWithNoTests"
