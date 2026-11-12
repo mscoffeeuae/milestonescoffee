@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FilsSchema, UuidSchema } from './common.js';
+import { FilsSchema, UuidSchema } from './common.ts';
 
 /** Order state machine — server-side only; never computed client-side */
 export const OrderStatusSchema = z.enum([

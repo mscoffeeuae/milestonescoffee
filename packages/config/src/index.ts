@@ -3,5 +3,5 @@
  * Parse and validate process.env at startup. Fail fast on missing/invalid vars.
  */
 
-export * from './env.js';
-export * from './feature-flags.js';
+export * from './env.ts';
+export * from './feature-flags.ts';

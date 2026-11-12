@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { cn } from '../../lib/utils.js';
+import { cn } from '../../lib/utils.ts';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   /** Validation error message — displayed below the input */

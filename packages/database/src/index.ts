@@ -17,8 +17,8 @@
  * See docs/ARCHITECTURE.md for the full dependency boundary table.
  */
 
-export { PrismaClient } from './generated/index.js';
-export { db, disconnect } from './client.js';
-export type { Prisma } from './generated/index.js';
+export { PrismaClient } from './generated/index.ts';
+export { db, disconnect } from './client.ts';
+export type { Prisma } from './generated/index.ts';
 // Enum exports (Prompt 11: QR codes, recommendations)
-export { QrCodeType, QrCodeStatus, RecommendationEventType } from './generated/index.js';
+export { QrCodeType, QrCodeStatus, RecommendationEventType } from './generated/index.ts';

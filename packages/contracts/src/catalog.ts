@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BilingualStringSchema, FilsSchema, UuidSchema } from './common.js';
+import { BilingualStringSchema, FilsSchema, UuidSchema } from './common.ts';
 
 export const BranchSchema = z.object({
   id: UuidSchema,

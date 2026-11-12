@@ -4,8 +4,8 @@
  * Must NOT import: database, ui
  */
 
-export * from './common.js';
-export * from './catalog.js';
-export * from './order.js';
-export * from './payment.js';
-export * from './errors.js';
+export * from './common.ts';
+export * from './catalog.ts';
+export * from './order.ts';
+export * from './payment.ts';
+export * from './errors.ts';

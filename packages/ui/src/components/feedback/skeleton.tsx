@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { cn } from '../../lib/utils.js';
+import { cn } from '../../lib/utils.ts';
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Explicit accessible label — announce loading state to screen readers */

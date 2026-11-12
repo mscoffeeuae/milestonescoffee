@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import pg from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from './generated/index.js'
+import { PrismaClient } from './generated/index.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 try {

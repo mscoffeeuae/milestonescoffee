@@ -8,19 +8,19 @@
  */
 
 // Utilities
-export { cn } from './lib/utils.js';
+export { cn } from './lib/utils.ts';
 
 // Primitives
-export { Button } from './components/primitives/button.js';
-export type { ButtonProps } from './components/primitives/button.js';
+export { Button } from './components/primitives/button.ts';
+export type { ButtonProps } from './components/primitives/button.ts';
 
-export { Input } from './components/primitives/input.js';
-export type { InputProps } from './components/primitives/input.js';
+export { Input } from './components/primitives/input.ts';
+export type { InputProps } from './components/primitives/input.ts';
 
-export { Label } from './components/primitives/label.js';
-export type { LabelProps } from './components/primitives/label.js';
+export { Label } from './components/primitives/label.ts';
+export type { LabelProps } from './components/primitives/label.ts';
 
 // Feedback
-export { Skeleton } from './components/feedback/skeleton.js';
-export { EmptyState } from './components/feedback/empty-state.js';
-export { ErrorState } from './components/feedback/error-state.js';
+export { Skeleton } from './components/feedback/skeleton.ts';
+export { EmptyState } from './components/feedback/empty-state.ts';
+export { ErrorState } from './components/feedback/error-state.ts';
