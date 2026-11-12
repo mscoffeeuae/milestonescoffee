@@ -16,7 +16,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1232,7 +1231,7 @@ model ReconciliationRun {
 // SCHEMA META (required for prisma generate without generate step)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-model _SchemaMeta {
+model SchemaMeta {
   id        String   @id @default(uuid())
   key       String   @unique
   value     String
