@@ -7,7 +7,7 @@
  * All content marked [PLACEHOLDER] requires Marketing approval before production use.
  */
 
-export * from './types.ts';
-export * from './translator.ts';
-export { en } from './locales/en.ts';
-export { ar } from './locales/ar.ts';
+export * from './types';
+export * from './translator';
+export { en } from './locales/en';
+export { ar } from './locales/ar';

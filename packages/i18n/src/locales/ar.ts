@@ -1,4 +1,4 @@
-import type { TranslationDict } from '../types.ts';
+import type { TranslationDict } from '../types';
 
 /**
  * Arabic UI translations.

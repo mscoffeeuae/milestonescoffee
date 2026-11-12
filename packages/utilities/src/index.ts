@@ -3,6 +3,6 @@
  * No external runtime dependencies; safe to import from any package.
  */
 
-export * from './money.ts';
-export * from './time.ts';
-export * from './strings.ts';
+export * from './money';
+export * from './time';
+export * from './strings';

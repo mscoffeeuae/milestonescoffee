@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aedToFils, filsToAedDisplay, addFils, multiplyFils, assertFils } from './money.ts';
+import { aedToFils, filsToAedDisplay, addFils, multiplyFils, assertFils } from './money';
 
 describe('aedToFils', () => {
   it('converts decimal AED to integer fils', () => {

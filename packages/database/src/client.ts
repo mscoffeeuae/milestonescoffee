@@ -2,7 +2,7 @@
  * Singleton Prisma client for server-side use.
  * Never import this in web or admin apps.
  */
-import { PrismaClient } from './generated/index.ts';
+import { PrismaClient } from './generated/index';
 
 declare global {
   // eslint-disable-next-line no-var

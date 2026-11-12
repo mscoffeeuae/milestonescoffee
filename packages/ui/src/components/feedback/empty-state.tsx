@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { cn } from '../../lib/utils.ts';
+import { cn } from '../../lib/utils';
 
 interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Illustration slot — icon or graphic */

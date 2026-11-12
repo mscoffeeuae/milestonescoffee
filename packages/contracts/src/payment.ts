@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FilsSchema, UuidSchema } from './common.ts';
+import { FilsSchema, UuidSchema } from './common';
 
 /** Payment state machine — server-side only */
 export const PaymentStatusSchema = z.enum([

@@ -1,6 +1,6 @@
-import type { Locale, TranslationDict } from './types.ts';
-import { en } from './locales/en.ts';
-import { ar } from './locales/ar.ts';
+import type { Locale, TranslationDict } from './types';
+import { en } from './locales/en';
+import { ar } from './locales/ar';
 
 const dictionaries: Record<Locale, TranslationDict> = { en, ar };
 
