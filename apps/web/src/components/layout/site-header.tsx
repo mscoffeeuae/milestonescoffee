@@ -11,6 +11,8 @@ export function SiteHeader({ locale }: SiteHeaderProps) {
     { href: `/${locale}/locations`,   label: isAr ? 'فروعنا'       : 'Our Locations' },
     { href: `/${locale}/gallery`,     label: isAr ? 'معرض الصور'   : 'Gallery' },
     { href: `/${locale}/coffeebeans`, label: isAr ? 'حبوب القهوة'  : 'Coffee Beans' },
+    { href: `/${locale}/about`,       label: isAr ? 'من نحن'        : 'About' },
+    { href: `/${locale}/blog`,        label: isAr ? 'المدونة'       : 'Blog' },
     { href: `/${locale}/contact`,     label: isAr ? 'تواصل معنا'   : 'Contact' },
   ];
   return (

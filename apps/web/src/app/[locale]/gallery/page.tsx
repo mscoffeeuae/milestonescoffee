@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import { client } from '@milestones/cms';
-import { groq } from 'next-sanity';
 
 interface GalleryPageProps { params: Promise<{ locale: string }>; }
 
@@ -12,14 +10,28 @@ export async function generateMetadata({ params }: GalleryPageProps): Promise<Me
   };
 }
 
-const GALLERY_QUERY = groq`*[_type == "galleryImage"] | order(_createdAt desc) { _id, title, "url": image.asset->url, "alt": coalesce(image.alt, title, "Milestones Coffee") }`;
 interface GalleryImage { _id: string; title: string; url: string; alt: string; }
+
+async function getGalleryImages(): Promise<GalleryImage[]> {
+  try {
+    const query = encodeURIComponent('*[_type == "galleryImage"] | order(_createdAt desc) { _id, title, "url": image.asset->url, "alt": coalesce(image.alt, title, "Milestones Coffee") }');
+    const res = await fetch(
+      `https://txh3gqgo.api.sanity.io/v2021-10-21/data/query/production?query=${query}`,
+      { next: { revalidate: 3600 } }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.result ?? [];
+  } catch {
+    return [];
+  }
+}
 
 export default async function GalleryPage({ params }: GalleryPageProps) {
   const { locale } = await params;
   const isAr = locale === 'ar';
-  let images: GalleryImage[] = [];
-  try { images = await client.fetch(GALLERY_QUERY); } catch { /* CMS unavailable */ }
+  const images = await getGalleryImages();
+
   return (
     <main style={{ minHeight: '70vh', padding: 'var(--spacing-2xl) var(--spacing-xl)', maxWidth: '1280px', margin: '0 auto' }}>
       <h1 style={{ fontSize: 'clamp(2rem,5vw,3rem)', fontWeight: 800, marginBottom: 'var(--spacing-sm)', color: 'var(--color-brand-espresso)' }}>

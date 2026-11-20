@@ -87,6 +87,9 @@ export function SiteFooter({ locale }: SiteFooterProps) {
             {[
               { href: `/${locale}/menu`, label: isAr ? 'القائمة' : 'Menu' },
               { href: `/${locale}/locations`, label: isAr ? 'فروعنا' : 'Locations' },
+              { href: `/${locale}/about`, label: isAr ? 'من نحن' : 'About Us' },
+              { href: `/${locale}/blog`, label: isAr ? 'المدونة' : 'Blog' },
+              { href: `/${locale}/franchise`, label: isAr ? 'الامتياز' : 'Franchise' },
               { href: `/${locale}/corporate`, label: isAr ? 'الشركات' : 'Corporate' },
             ].map(({ href, label }) => (
               <li key={href}>
