@@ -8,7 +8,10 @@
  * Token names are final; numeric values are directional placeholders only.
  */
 
-@import "tailwindcss";
+/* Tailwind without preflight — preserves existing hand-styled header/footer */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
 
 /* ─── Design tokens ─────────────────────────────────────────────────────── */
 
@@ -146,6 +149,7 @@ html {
 
 /* ─── Typography ───────────────────────────────────────────────────────────── */
 
+@layer base {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 700;
@@ -165,4 +169,5 @@ a {
 
 a:hover {
   color: var(--color-interactive-hover);
+}
 }
