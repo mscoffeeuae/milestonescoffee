@@ -150,6 +150,8 @@ html {
 /* ─── Typography ───────────────────────────────────────────────────────────── */
 
 @layer base {
+ul[role='list'] { list-style: none; margin: 0; padding: 0; }
+dd { margin: 0; }
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 700;

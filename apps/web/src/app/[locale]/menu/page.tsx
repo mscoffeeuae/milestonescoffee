@@ -7,6 +7,7 @@ import { MENU_CATEGORIES_QUERY } from '@/lib/sanity/queries';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { MenuBrowser, type MenuCategory } from '@/components/menu/menu-browser';
+import { DEMO_MENU, IS_DEV_PREVIEW } from '@/lib/demo-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,9 +37,11 @@ export default async function MenuPage({
 
   const typedLocale = locale as Locale;
   const isAr = typedLocale === 'ar';
-  const categories = ((await sanityFetch<MenuCategory[]>(MENU_CATEGORIES_QUERY)) ?? []).filter(
+  const cmsCategories = ((await sanityFetch<MenuCategory[]>(MENU_CATEGORIES_QUERY)) ?? []).filter(
     (c) => c.products?.length > 0,
   );
+  const isDemo = IS_DEV_PREVIEW && cmsCategories.length === 0;
+  const categories = isDemo ? DEMO_MENU : cmsCategories;
   const itemCount = categories.reduce((n, c) => n + c.products.length, 0);
   const newCount = categories.reduce((n, c) => n + c.products.filter((p) => p.isNew).length, 0);
 
@@ -46,6 +49,11 @@ export default async function MenuPage({
     <>
       <SiteHeader locale={typedLocale} />
       <main id="main-content" className="min-h-screen bg-[var(--color-brand-ivory,#F5F0E8)]">
+{isDemo && (
+          <div role="note" className="bg-amber-400 px-4 py-2 text-center text-sm font-semibold text-black">
+            DEV PREVIEW — demo data shown because the CMS is empty. Never shown in production.
+          </div>
+        )}
         {/* Hero */}
         <section className="relative overflow-hidden bg-[var(--color-brand-espresso,#3B1F0E)] text-white">
           <div

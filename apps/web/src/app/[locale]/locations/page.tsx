@@ -7,6 +7,7 @@ import { BRANCHES_QUERY } from '@/lib/sanity/queries';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { BranchStatus, WeeklyHours, type OpeningHours } from '@/components/locations/branch-status';
+import { DEMO_BRANCHES, IS_DEV_PREVIEW } from '@/lib/demo-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,7 +83,9 @@ export default async function LocationsPage({
 
   const typedLocale = locale as Locale;
   const isAr = typedLocale === 'ar';
-  const branches = (await sanityFetch<Branch[]>(BRANCHES_QUERY)) ?? [];
+  const cmsBranches = (await sanityFetch<Branch[]>(BRANCHES_QUERY)) ?? [];
+  const isDemo = IS_DEV_PREVIEW && cmsBranches.length === 0;
+  const branches: Branch[] = isDemo ? (DEMO_BRANCHES as Branch[]) : cmsBranches;
 
   const byEmirate = new Map<string, Branch[]>();
   for (const b of branches) byEmirate.set(b.emirate, [...(byEmirate.get(b.emirate) ?? []), b]);
@@ -94,6 +97,11 @@ export default async function LocationsPage({
     <>
       <SiteHeader locale={typedLocale} />
       <main id="main-content" className="min-h-screen bg-[var(--color-brand-ivory,#F5F0E8)]">
+{isDemo && (
+          <div role="note" className="bg-amber-400 px-4 py-2 text-center text-sm font-semibold text-black">
+            DEV PREVIEW — demo data shown because the CMS is empty. Never shown in production.
+          </div>
+        )}
         {/* Hero */}
         <section className="relative overflow-hidden bg-[var(--color-brand-espresso,#3B1F0E)] text-white">
           <div
