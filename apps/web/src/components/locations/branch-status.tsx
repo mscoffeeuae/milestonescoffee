@@ -110,3 +110,8 @@ export function WeeklyHours({ hours, isAr }: { hours: OpeningHours; isAr: boolea
     </table>
   );
 }
+
+/** True when the branch is open at this moment (Asia/Dubai). */
+export function isOpenNow(h: OpeningHours | null): boolean {
+  return compute(h).state === 'open';
+}

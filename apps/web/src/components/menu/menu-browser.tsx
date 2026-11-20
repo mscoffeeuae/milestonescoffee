@@ -59,6 +59,7 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
   const [diets, setDiets] = useState<string[]>([]);
   const [avoid, setAvoid] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [sort, setSort] = useState<'default' | 'asc' | 'desc'>('default');
 
   const toggle = (list: string[], set: (v: string[]) => void, v: string) =>
     set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
@@ -92,8 +93,18 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
           return true;
         }),
       }))
-      .filter((c) => c.products.length > 0);
-  }, [categories, query, diets, avoid]);
+      .filter((c) => c.products.length > 0)
+      .map((c) =>
+        sort === 'default'
+          ? c
+          : {
+              ...c,
+              products: [...c.products].sort((a, b) =>
+                sort === 'asc' ? (a.displayPriceAed ?? 0) - (b.displayPriceAed ?? 0) : (b.displayPriceAed ?? 0) - (a.displayPriceAed ?? 0),
+              ),
+            },
+      );
+  }, [categories, query, diets, avoid, sort]);
 
   const featured = useMemo(
     () => filtered.flatMap((c) => c.products.filter((p) => p.isFeatured)).slice(0, 4),
@@ -119,6 +130,16 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
                 className="w-full rounded-full border border-black/10 bg-white ps-9 pe-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-gold,#C9A87C)]"
               />
             </label>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as 'default' | 'asc' | 'desc')}
+              aria-label={isAr ? 'ترتيب' : 'Sort'}
+              className="shrink-0 rounded-full border border-black/10 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-gold,#C9A87C)]"
+            >
+              <option value="default">{isAr ? 'الترتيب الافتراضي' : 'Default order'}</option>
+              <option value="asc">{isAr ? 'السعر: من الأقل' : 'Price: low to high'}</option>
+              <option value="desc">{isAr ? 'السعر: من الأعلى' : 'Price: high to low'}</option>
+            </select>
             <button
               type="button"
               onClick={() => setShowFilters((s) => !s)}

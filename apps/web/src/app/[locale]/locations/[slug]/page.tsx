@@ -1,13 +1,17 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Locale } from '@milestones/contracts';
 import { sanityFetch } from '@/lib/sanity/client';
-import { BRANCH_BY_SLUG_QUERY, BRANCHES_QUERY } from '@/lib/sanity/queries';
+import { BRANCH_BY_SLUG_QUERY } from '@/lib/sanity/queries';
+import { BRANCHES_FALLBACK } from '@/lib/branches-fallback';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
+import { BranchStatus, WeeklyHours, type OpeningHours } from '@/components/locations/branch-status';
 
-/** ─── Types ─────────────────────────────────────────────────────────── */
-interface BranchDetail {
+export const dynamic = 'force-dynamic';
+
+interface Branch {
   _id: string;
   nameEn: string;
   nameAr: string;
@@ -17,13 +21,12 @@ interface BranchDetail {
   addressAr: string | null;
   googleMapsUrl: string | null;
   coordinates: { lat: number; lng: number } | null;
-  openingHours: Record<string, string | boolean> | null;
+  openingHours: OpeningHours | null;
   openingHoursNoteEn: string | null;
   openingHoursNoteAr: string | null;
   services: string[] | null;
   phone: string | null;
   heroImage: { asset: { url: string } } | null;
-  galleryImages: Array<{ asset: { url: string } }> | null;
   seo: {
     titleEn: string | null;
     titleAr: string | null;
@@ -33,23 +36,37 @@ interface BranchDetail {
   } | null;
 }
 
-interface SlimBranch {
-  _id: string;
-  slug: string;
-}
-
 const SUPPORTED_LOCALES: Locale[] = ['en', 'ar'];
 
-/** ─── Static params ──────────────────────────────────────────────────── */
-export async function generateStaticParams(): Promise<{ locale: string; slug: string }[]> {
-  const branches = await sanityFetch<SlimBranch[]>(BRANCHES_QUERY);
-  if (!branches) return [];
-  return SUPPORTED_LOCALES.flatMap((locale) =>
-    branches.map((b) => ({ locale, slug: b.slug })),
-  );
+// Labels mirror apps/studio/src/schemas/documents/branch.ts
+const EMIRATES: Record<string, [string, string]> = {
+  'abu-dhabi': ['Abu Dhabi', 'أبوظبي'],
+  dubai: ['Dubai', 'دبي'],
+  sharjah: ['Sharjah', 'الشارقة'],
+  ajman: ['Ajman', 'عجمان'],
+  'umm-al-quwain': ['Umm Al Quwain', 'أم القيوين'],
+  'ras-al-khaimah': ['Ras Al Khaimah', 'رأس الخيمة'],
+  fujairah: ['Fujairah', 'الفجيرة'],
+};
+
+const SERVICES: Record<string, [string, string]> = {
+  'dine-in': ['Dine in', 'تناول في المكان'],
+  takeaway: ['Takeaway', 'سفري'],
+  'drive-through': ['Drive-through', 'خدمة السيارات'],
+  delivery: ['Delivery', 'توصيل'],
+  wifi: ['WiFi', 'واي فاي'],
+  'prayer-room': ['Prayer room', 'مصلى'],
+  parking: ['Parking', 'مواقف'],
+  accessible: ['Accessible', 'مهيأ لذوي الهمم'],
+};
+
+/** CMS record first; Google-sourced fallback until Sanity has the branch. */
+async function getBranch(slug: string): Promise<Branch | null> {
+  const cms = await sanityFetch<Branch>(BRANCH_BY_SLUG_QUERY, { slug });
+  if (cms) return cms;
+  return (BRANCHES_FALLBACK as Branch[]).find((b) => b.slug === slug) ?? null;
 }
 
-/** ─── Metadata ───────────────────────────────────────────────────────── */
 export async function generateMetadata({
   params,
 }: {
@@ -57,28 +74,25 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!SUPPORTED_LOCALES.includes(locale as Locale)) return {};
-
-  const branch = await sanityFetch<BranchDetail>(BRANCH_BY_SLUG_QUERY, { slug });
+  const branch = await getBranch(slug);
   if (!branch) return {};
 
   const isAr = locale === 'ar';
   const title = isAr ? (branch.seo?.titleAr ?? branch.nameAr) : (branch.seo?.titleEn ?? branch.nameEn);
-  const description = isAr ? branch.seo?.descriptionAr : branch.seo?.descriptionEn;
+  const description = isAr
+    ? (branch.seo?.descriptionAr ?? `${branch.nameAr} — ${EMIRATES[branch.emirate]?.[1] ?? ''}`)
+    : (branch.seo?.descriptionEn ?? `${branch.nameEn} in ${EMIRATES[branch.emirate]?.[0] ?? ''}`);
 
   return {
     title,
-    description: description ?? undefined,
+    description,
     robots: branch.seo?.noIndex ? { index: false } : undefined,
     alternates: {
-      languages: {
-        en: `/en/locations/${slug}`,
-        ar: `/ar/locations/${slug}`,
-      },
+      languages: { en: `/en/locations/${slug}`, ar: `/ar/locations/${slug}` },
     },
   };
 }
 
-/** ─── Page ───────────────────────────────────────────────────────────── */
 export default async function BranchPage({
   params,
 }: {
@@ -90,118 +104,114 @@ export default async function BranchPage({
   const typedLocale = locale as Locale;
   const isAr = typedLocale === 'ar';
 
-  const branch = await sanityFetch<BranchDetail>(BRANCH_BY_SLUG_QUERY, { slug });
+  const branch = await getBranch(slug);
   if (!branch) notFound();
 
   const name = isAr ? branch.nameAr : branch.nameEn;
   const address = isAr ? branch.addressAr : branch.addressEn;
+  const note = isAr ? branch.openingHoursNoteAr : branch.openingHoursNoteEn;
+  const emirateName = EMIRATES[branch.emirate]?.[isAr ? 1 : 0] ?? branch.emirate;
+  const c = branch.coordinates;
+  const mapSrc = c
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${c.lng - 0.006},${c.lat - 0.004},${c.lng + 0.006},${c.lat + 0.004}&layer=mapnik&marker=${c.lat},${c.lng}`
+    : null;
 
   return (
     <>
       <SiteHeader locale={typedLocale} />
-      <main id="main-content">
+      <main id="main-content" className="min-h-screen bg-[var(--color-brand-ivory,#F5F0E8)]">
         {/* Hero */}
-        {branch.heroImage?.asset.url ? (
-          <div className="relative h-72 md:h-96 overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={branch.heroImage.asset.url}
-              alt={name}
-              className="w-full h-full object-cover"
-            />
+        <section className="relative overflow-hidden bg-[var(--color-brand-espresso,#3B1F0E)] text-white">
+          <div
+            aria-hidden
+            className="absolute inset-0 opacity-20"
+            style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, #C9A87C 0, transparent 40%), radial-gradient(circle at 10% 90%, #A0784A 0, transparent 35%)' }}
+          />
+          <div className="container relative mx-auto px-4 py-14 md:py-16">
+            <nav aria-label={isAr ? 'مسار التنقل' : 'Breadcrumb'} className="text-sm text-white/60">
+              <Link href={`/${typedLocale}/locations`} className="no-underline hover:text-white">
+                {isAr ? 'فروعنا' : 'Locations'}
+              </Link>
+              <span className="mx-2" aria-hidden>/</span>
+              <span>{emirateName}</span>
+            </nav>
+            <h1 className="mt-3 text-3xl md:text-5xl font-bold" style={{ color: '#fff' }}>{name}</h1>
+            {!isAr && branch.nameAr && (
+              <p className="mt-1 text-lg text-white/70" dir="rtl" lang="ar">{branch.nameAr}</p>
+            )}
+            <div className="mt-5">
+              {branch.openingHours && <BranchStatus hours={branch.openingHours} isAr={isAr} />}
+            </div>
           </div>
-        ) : (
-          <div className="h-32 bg-[var(--color-brand-primary)]" />
-        )}
+        </section>
 
-        <div className="container mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-3 gap-10">
-          {/* Main content */}
-          <div className="md:col-span-2 space-y-6">
-            <h1 className="text-3xl font-bold">{name}</h1>
+        <div className="container mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main column */}
+          <div className="lg:col-span-2 space-y-8">
+            {mapSrc && (
+              <iframe
+                title={`${isAr ? 'خريطة' : 'Map of'} ${name}`}
+                src={mapSrc}
+                className="h-72 w-full rounded-2xl ring-1 ring-black/5 md:h-96"
+                loading="lazy"
+              />
+            )}
 
-            {/* Services */}
             {branch.services && branch.services.length > 0 && (
-              <section aria-label={isAr ? 'الخدمات المتاحة' : 'Available services'}>
-                <h2 className="text-lg font-semibold mb-3">
-                  {isAr ? 'الخدمات المتاحة' : 'Services'}
+              <section aria-labelledby="svc-h" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                <h2 id="svc-h" className="mb-4 text-xl font-bold text-[var(--color-brand-espresso,#3B1F0E)]">
+                  {isAr ? 'الخدمات المتاحة' : 'Available services'}
                 </h2>
                 <ul className="flex flex-wrap gap-2" role="list">
-                  {branch.services.map((svc) => (
-                    <li
-                      key={svc}
-                      className="bg-[var(--color-surface-muted)] px-3 py-1 rounded-full text-sm"
-                    >
-                      {svc}
+                  {branch.services.map((s) => (
+                    <li key={s} className="rounded-full bg-[var(--color-brand-ivory,#F5F0E8)] px-3 py-1 text-sm text-[var(--color-brand-espresso,#3B1F0E)] ring-1 ring-[var(--color-brand-gold,#C9A87C)]/40">
+                      {SERVICES[s]?.[isAr ? 1 : 0] ?? s}
                     </li>
                   ))}
                 </ul>
               </section>
             )}
 
-            {/* Gallery */}
-            {branch.galleryImages && branch.galleryImages.length > 0 && (
-              <section aria-label={isAr ? 'معرض الصور' : 'Gallery'}>
-                <h2 className="text-lg font-semibold mb-3">
-                  {isAr ? 'معرض الصور' : 'Gallery'}
-                </h2>
-                <ul className="grid grid-cols-2 md:grid-cols-3 gap-2" role="list">
-                  {branch.galleryImages.map((img, i) => (
-                    <li key={i}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={img.asset.url}
-                        alt=""
-                        aria-hidden="true"
-                        className="w-full h-32 object-cover rounded"
-                        loading="lazy"
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+            <div>
+              <Link href={`/${typedLocale}/locations`} className="text-sm font-semibold text-[var(--color-brand-bronze,#A0784A)] no-underline hover:underline">
+                {isAr ? '→ جميع الفروع' : '← All branches'}
+              </Link>
+            </div>
           </div>
 
           {/* Sidebar */}
           <aside className="space-y-6">
-            {/* Address */}
-            {address && (
-              <section>
-                <h2 className="font-semibold mb-1">{isAr ? 'العنوان' : 'Address'}</h2>
-                <address className="text-sm text-[var(--color-text-secondary)] not-italic">
-                  {address}
-                </address>
+            <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+              <h2 className="mb-2 text-lg font-bold text-[var(--color-brand-espresso,#3B1F0E)]">{isAr ? 'العنوان' : 'Address'}</h2>
+              {address && <address className="text-sm not-italic text-black/60">{address}</address>}
+              <div className="mt-4 flex flex-col gap-2">
                 {branch.googleMapsUrl && (
                   <a
                     href={branch.googleMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-2 text-sm text-[var(--color-brand-primary)] underline underline-offset-2"
+                    className="rounded-full bg-[var(--color-brand-espresso,#3B1F0E)] px-4 py-2.5 text-center text-sm font-semibold text-white no-underline transition hover:bg-[var(--color-brand-bronze,#A0784A)]"
                   >
                     {isAr ? 'احصل على الاتجاهات' : 'Get directions'}
                   </a>
                 )}
-              </section>
-            )}
+                {branch.phone && (
+                  <a
+                    href={`tel:${branch.phone.replace(/\s+/g, '')}`}
+                    className="rounded-full border border-[var(--color-brand-espresso,#3B1F0E)] px-4 py-2.5 text-center text-sm font-semibold text-[var(--color-brand-espresso,#3B1F0E)] no-underline transition hover:bg-[var(--color-brand-espresso,#3B1F0E)] hover:text-white"
+                  >
+                    <span dir="ltr">{isAr ? 'اتصل' : 'Call'} {branch.phone}</span>
+                  </a>
+                )}
+              </div>
+            </section>
 
-            {/* Phone */}
-            {branch.phone && (
-              <section>
-                <h2 className="font-semibold mb-1">{isAr ? 'الهاتف' : 'Phone'}</h2>
-                <a
-                  href={`tel:${branch.phone}`}
-                  className="text-sm text-[var(--color-brand-primary)]"
-                >
-                  {branch.phone}
-                </a>
+            {branch.openingHours && (
+              <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                <h2 className="mb-3 text-lg font-bold text-[var(--color-brand-espresso,#3B1F0E)]">{isAr ? 'ساعات العمل' : 'Opening hours'}</h2>
+                <WeeklyHours hours={branch.openingHours} isAr={isAr} />
+                {note && <p className="mt-3 text-xs text-amber-800">{note}</p>}
               </section>
-            )}
-
-            {/* Opening hours note */}
-            {(isAr ? branch.openingHoursNoteAr : branch.openingHoursNoteEn) && (
-              <p className="text-xs text-[var(--color-text-secondary)] border-t pt-4">
-                {isAr ? branch.openingHoursNoteAr : branch.openingHoursNoteEn}
-              </p>
             )}
           </aside>
         </div>

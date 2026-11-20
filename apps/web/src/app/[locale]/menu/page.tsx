@@ -61,6 +61,7 @@ export default async function MenuPage({
             className="absolute inset-0 opacity-20"
             style={{ backgroundImage: 'radial-gradient(circle at 20% 30%, #C9A87C 0, transparent 40%), radial-gradient(circle at 85% 70%, #A0784A 0, transparent 35%)' }}
           />
+          <div aria-hidden className="absolute inset-0" style={{ backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><ellipse cx='32' cy='32' rx='5' ry='8' transform='rotate(35 32 32)' fill='%23C9A87C' fill-opacity='0.12'/></svg>\")" }} />
           <div className="container relative mx-auto px-4 py-16 md:py-20">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-brand-gold,#C9A87C)]">
               Milestones Coffee
