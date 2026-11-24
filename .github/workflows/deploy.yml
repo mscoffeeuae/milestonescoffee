@@ -1,0 +1,74 @@
+# Milestones web deploy. Builds image to GHCR on push to main, then deploys to VPS.
+# Deploy job is skipped until VPS_HOST is set.
+# Secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY, GHCR_READ_TOKEN (classic PAT, read:packages).
+name: Deploy Web
+
+on:
+  push:
+    branches: [main]
+    paths: ['apps/web/**', 'packages/**', 'pnpm-lock.yaml', 'Dockerfile', '.github/workflows/deploy.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/milestones-web:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ghcr.io/${{ github.repository_owner }}/milestones-web:latest
+          build-args: |
+            NEXT_PUBLIC_SANITY_PROJECT_ID=txh3gqgo
+            NEXT_PUBLIC_SANITY_DATASET=production
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check secrets
+        id: check
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          if [ -z "$VPS_HOST" ]; then echo "VPS_HOST not set, skipping deploy"; echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Deploy to VPS
+        if: steps.check.outputs.skip == 'false'
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE: ${{ needs.build.outputs.image }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: IMAGE,GHCR_READ_TOKEN
+          script: |
+            set -e
+            echo "$GHCR_READ_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker pull "$IMAGE"
+            cd /opt/milestones
+            TAG="${IMAGE##*:}" docker compose up -d web
+            for i in $(seq 1 20); do
+              if curl -fsS http://127.0.0.1:3005/en > /dev/null; then echo "health OK"; exit 0; fi
+              sleep 3
+            done
+            echo "health check failed"; exit 1

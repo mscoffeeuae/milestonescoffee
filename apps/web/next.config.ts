@@ -25,6 +25,17 @@ const nextConfig: NextConfig = {
     '@milestones/config',
   ],
 
+  // Allow Next.js <Image> to load from live brand site
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'milestonescoffee.ae',
+        pathname: '/**',
+      },
+    ],
+  },
+
   // Output standalone for Docker
   output: 'standalone',
 };
