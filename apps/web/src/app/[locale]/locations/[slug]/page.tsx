@@ -65,7 +65,7 @@ const SERVICES: Record<string, [string, string]> = {
 async function getBranch(slug: string): Promise<Branch | null> {
   const cms = await sanityFetch<Branch>(BRANCH_BY_SLUG_QUERY, { slug });
   if (cms) return cms;
-  return (BRANCHES_FALLBACK as Branch[]).find((b) => b.slug === slug) ?? null;
+  return (BRANCHES_FALLBACK as unknown as Branch[]).find((b) => b.slug === slug) ?? null;
 }
 
 export async function generateMetadata({
@@ -188,7 +188,7 @@ export default async function BranchPage({
               name={name}
               address={address}
               coords={c}
-              others={(BRANCHES_FALLBACK as Branch[]).flatMap((b) =>
+              others={(BRANCHES_FALLBACK as unknown as Branch[]).flatMap((b) =>
                 b.coordinates ? [{ name: isAr ? b.nameAr : b.nameEn, slug: b.slug, lat: b.coordinates.lat, lng: b.coordinates.lng }] : [],
               )}
             />

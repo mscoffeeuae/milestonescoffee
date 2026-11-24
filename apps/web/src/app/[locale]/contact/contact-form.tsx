@@ -2,18 +2,20 @@
 
 import { useState, type FormEvent } from 'react';
 
+type ContactErrors = { name?: string; email?: string; message?: string };
+
 interface ContactFormProps {
   isAr: boolean;
 }
 
 export function ContactForm({ isAr }: ContactFormProps) {
   const [status, setStatus] = useState<'idle' | 'invalid' | 'ready'>('idle');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<ContactErrors>({});
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    const next: Record<string, string> = {};
+    const next: ContactErrors = {};
     if (!String(form.get('name') ?? '').trim()) next.name = isAr ? 'الاسم مطلوب' : 'Please enter your name';
     const email = String(form.get('email') ?? '').trim();
     if (!/^\S+@\S+\.\S+$/.test(email)) next.email = isAr ? 'أدخل بريداً إلكترونياً صحيحاً' : 'Please enter a valid email';

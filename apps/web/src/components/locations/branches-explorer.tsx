@@ -53,7 +53,7 @@ function loadLeaflet(): Promise<any> {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = LEAFLET_CSS;
-      link.dataset.leaflet = '1';
+      link.dataset['leaflet'] = '1';
       document.head.appendChild(link);
     }
     const script = document.createElement('script');

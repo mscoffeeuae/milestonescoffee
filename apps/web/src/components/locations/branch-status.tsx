@@ -12,7 +12,7 @@ const DAY_AR: Record<string, string> = {
 
 const toMin = (t?: unknown) => {
   if (typeof t !== 'string' || !/^\d{2}:\d{2}$/.test(t)) return null;
-  const [h, m] = t.split(':').map(Number);
+  const [h = 0, m = 0] = t.split(':').map(Number);
   return h * 60 + m;
 };
 
@@ -39,7 +39,7 @@ function compute(h: OpeningHours | null): Status {
   const { day, min } = dubaiNow();
   const i = DAYS.indexOf(day as (typeof DAYS)[number]);
   const today = slot(h, day);
-  const prev = slot(h, DAYS[(i + 6) % 7]);
+  const prev = slot(h, DAYS[(i + 6) % 7] ?? '');
   const fmt = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
   // Overnight spill-over from yesterday
