@@ -167,6 +167,12 @@ export const branch = defineType({
       type: 'string',
       description: '⚠ Must be verified by Operations. Include country code e.g. +971 4 123 4567.',
     }),
+    defineField({
+      name: 'whatsapp',
+      title: 'WhatsApp number [PLACEHOLDER]',
+      type: 'string',
+      description: 'Leave empty to hide the WhatsApp button. Include country code e.g. +971 50 123 4567.',
+    }),
   ],
 
   orderings: [

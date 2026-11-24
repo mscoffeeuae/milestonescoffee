@@ -42,6 +42,7 @@ export const BRANCH_BY_SLUG_QUERY = `
     openingHoursNoteAr,
     services,
     phone,
+    whatsapp,
     heroImage { asset->{ url, metadata { lqip, dimensions } }, hotspot, crop },
     galleryImages[] { asset->{ url, metadata { lqip, dimensions } }, hotspot, crop },
     seo { titleEn, titleAr, descriptionEn, descriptionAr, ogImage { asset->{ url } }, noIndex }

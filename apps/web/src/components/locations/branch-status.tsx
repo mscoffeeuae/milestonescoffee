@@ -32,7 +32,7 @@ function slot(h: OpeningHours, day: string) {
   return o == null || c == null ? undefined : { o, c };
 }
 
-type Status = { state: 'open' | 'closed' | 'unknown'; closesSoon?: boolean; until?: string };
+type Status = { state: 'open' | 'closed' | 'unknown'; closesSoon?: boolean; until?: string; mins?: number };
 
 function compute(h: OpeningHours | null): Status {
   if (!h) return { state: 'unknown' };
@@ -43,14 +43,22 @@ function compute(h: OpeningHours | null): Status {
   const fmt = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
   // Overnight spill-over from yesterday
-  if (prev && prev.c < prev.o && min < prev.c) return { state: 'open', until: fmt(prev.c), closesSoon: prev.c - min <= 60 };
+  if (prev && prev.c < prev.o && min < prev.c) return { state: 'open', until: fmt(prev.c), closesSoon: prev.c - min <= 60, mins: prev.c - min };
   if (today === undefined) return { state: 'unknown' };
   if (today) {
     const close = today.c <= today.o ? today.c + 1440 : today.c;
-    if (min >= today.o && min < close) return { state: 'open', until: fmt(close), closesSoon: close - min <= 60 };
-    if (min < today.o) return { state: 'closed', until: fmt(today.o) };
+    if (min >= today.o && min < close) return { state: 'open', until: fmt(close), closesSoon: close - min <= 60, mins: close - min };
+    if (min < today.o) return { state: 'closed', until: fmt(today.o), mins: today.o - min };
   }
   return { state: 'closed' };
+}
+
+/** "2h 15m" / "45 min" countdown label. */
+function duration(m: number, isAr: boolean) {
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (h === 0) return isAr ? `${r} د` : `${r} min`;
+  return isAr ? `${h} س${r ? ` ${r} د` : ''}` : `${h}h${r ? ` ${r}m` : ''}`;
 }
 
 export function BranchStatus({ hours, isAr }: { hours: OpeningHours | null; isAr: boolean }) {
@@ -67,10 +75,10 @@ export function BranchStatus({ hours, isAr }: { hours: OpeningHours | null; isAr
   const color = open ? (s.closesSoon ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-red-500';
   const text = open
     ? s.closesSoon
-      ? isAr ? `يغلق قريباً · ${s.until}` : `Closes soon · ${s.until}`
-      : isAr ? `مفتوح الآن · حتى ${s.until}` : `Open now · until ${s.until}`
+      ? isAr ? `يغلق قريباً · بعد ${duration(s.mins ?? 0, true)}` : `Closes soon · in ${duration(s.mins ?? 0, false)}`
+      : isAr ? `مفتوح الآن · يغلق بعد ${duration(s.mins ?? 0, true)} (${s.until})` : `Open now · closes in ${duration(s.mins ?? 0, false)} (${s.until})`
     : s.until
-      ? isAr ? `مغلق · يفتح ${s.until}` : `Closed · opens ${s.until}`
+      ? isAr ? `مغلق · يفتح بعد ${duration(s.mins ?? 0, true)} (${s.until})` : `Closed · opens in ${duration(s.mins ?? 0, false)} (${s.until})`
       : isAr ? 'مغلق اليوم' : 'Closed today';
 
   return (

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Locale } from '@milestones/contracts';
@@ -9,6 +10,11 @@ import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { BranchStatus, WeeklyHours, type OpeningHours } from '@/components/locations/branch-status';
 import { BranchTools } from '@/components/locations/branch-tools';
+import { BranchMobileBar } from '@/components/locations/branch-mobile-bar';
+import { BranchGallery } from '@/components/locations/branch-gallery';
+import { BranchNearby } from '@/components/locations/branch-nearby';
+import { BranchQr } from '@/components/locations/branch-qr';
+import { distanceKm } from '@/lib/geo';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +33,9 @@ interface Branch {
   openingHoursNoteAr: string | null;
   services: string[] | null;
   phone: string | null;
+  whatsapp?: string | null;
   heroImage: { asset: { url: string } } | null;
+  galleryImages?: { asset: { url: string } | null }[] | null;
   seo: {
     titleEn: string | null;
     titleAr: string | null;
@@ -38,6 +46,27 @@ interface Branch {
 }
 
 const SUPPORTED_LOCALES: Locale[] = ['en', 'ar'];
+
+const SCHEMA_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+
+/** Public origin of this request (works for any domain the site is served on). */
+async function getOrigin(): Promise<string> {
+  const h = await headers();
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'milestones.click';
+  const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
+  return `${proto}://${host}`;
+}
+
+function openingHoursSpec(hours: OpeningHours | null) {
+  if (!hours) return undefined;
+  return SCHEMA_DAYS.flatMap((day) => {
+    const k = day.toLowerCase();
+    const opens = hours[`${k}Open`];
+    const closes = hours[`${k}Close`];
+    if (hours[`${k}Closed`] || typeof opens !== 'string' || typeof closes !== 'string') return [];
+    return [{ '@type': 'OpeningHoursSpecification', dayOfWeek: day, opens, closes }];
+  });
+}
 
 // Labels mirror apps/studio/src/schemas/documents/branch.ts
 const EMIRATES: Record<string, [string, string]> = {
@@ -85,12 +114,14 @@ export async function generateMetadata({
     : (branch.seo?.descriptionEn ?? `${branch.nameEn} in ${EMIRATES[branch.emirate]?.[0] ?? ''}`);
 
   return {
+    metadataBase: new URL(await getOrigin()),
     title,
     description,
     robots: branch.seo?.noIndex ? { index: false } : undefined,
     alternates: {
       languages: { en: `/en/locations/${slug}`, ar: `/ar/locations/${slug}` },
     },
+    openGraph: { title, description, type: 'website', siteName: 'Milestones Coffee', locale: isAr ? 'ar_AE' : 'en_AE' },
   };
 }
 
@@ -113,12 +144,53 @@ export default async function BranchPage({
   const note = isAr ? branch.openingHoursNoteAr : branch.openingHoursNoteEn;
   const emirateName = EMIRATES[branch.emirate]?.[isAr ? 1 : 0] ?? branch.emirate;
   const c = branch.coordinates;
+  const origin = await getOrigin();
+  const pageUrl = `${origin}/${typedLocale}/locations/${slug}`;
+  const directionsUrl =
+    branch.googleMapsUrl ?? (c ? `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}` : null);
+  const whatsappDigits = branch.whatsapp?.replace(/D/g, '') ?? '';
+  const allBranches = BRANCHES_FALLBACK as unknown as Branch[];
+  const nearby = c
+    ? allBranches
+        .flatMap((b) => (b.slug !== slug && b.coordinates ? [{ b, km: distanceKm(c, b.coordinates) }] : []))
+        .sort((x, y) => x.km - y.km)
+        .slice(0, 3)
+        .map(({ b, km }) => ({
+          slug: b.slug,
+          name: isAr ? b.nameAr : b.nameEn,
+          area: EMIRATES[b.emirate]?.[isAr ? 1 : 0] ?? b.emirate,
+          km,
+        }))
+    : [];
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CafeOrCoffeeShop',
+    name: branch.nameEn,
+    alternateName: branch.nameAr,
+    url: pageUrl,
+    ...(branch.phone ? { telephone: branch.phone } : {}),
+    ...(branch.heroImage?.asset?.url ? { image: branch.heroImage.asset.url } : {}),
+    address: {
+      '@type': 'PostalAddress',
+      ...(branch.addressEn ? { streetAddress: branch.addressEn } : {}),
+      addressRegion: EMIRATES[branch.emirate]?.[0] ?? branch.emirate,
+      addressCountry: 'AE',
+    },
+    ...(c ? { geo: { '@type': 'GeoCoordinates', latitude: c.lat, longitude: c.lng } } : {}),
+    ...(branch.openingHours ? { openingHoursSpecification: openingHoursSpec(branch.openingHours) } : {}),
+    ...(branch.googleMapsUrl ? { hasMap: branch.googleMapsUrl } : {}),
+  };
   const mapSrc = c
     ? `https://www.openstreetmap.org/export/embed.html?bbox=${c.lng - 0.006},${c.lat - 0.004},${c.lng + 0.006},${c.lat + 0.004}&layer=mapnik&marker=${c.lat},${c.lng}`
     : null;
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        // Escape "<" so branch text can never close the script tag.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\u003c') }}
+      />
       <SiteHeader locale={typedLocale} />
       <main id="main-content" className="min-h-screen bg-[var(--color-brand-ivory,#F5F0E8)]">
         {/* Hero */}
@@ -149,6 +221,12 @@ export default async function BranchPage({
         <div className="container mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main column */}
           <div className="lg:col-span-2 space-y-8">
+            <BranchGallery
+              isAr={isAr}
+              name={name}
+              images={[...(branch.heroImage ? [branch.heroImage] : []), ...(branch.galleryImages ?? [])]}
+            />
+
             {mapSrc && (
               <iframe
                 title={`${isAr ? 'خريطة' : 'Map of'} ${name}`}
@@ -173,6 +251,8 @@ export default async function BranchPage({
               </section>
             )}
 
+            <BranchNearby isAr={isAr} locale={typedLocale} items={nearby} />
+
             <div>
               <Link href={`/${typedLocale}/locations`} className="text-sm font-semibold text-[var(--color-brand-bronze,#A0784A)] no-underline hover:underline">
                 {isAr ? '→ جميع الفروع' : '← All branches'}
@@ -188,7 +268,7 @@ export default async function BranchPage({
               name={name}
               address={address}
               coords={c}
-              others={(BRANCHES_FALLBACK as unknown as Branch[]).flatMap((b) =>
+              others={allBranches.flatMap((b) =>
                 b.coordinates ? [{ name: isAr ? b.nameAr : b.nameEn, slug: b.slug, lat: b.coordinates.lat, lng: b.coordinates.lng }] : [],
               )}
             />
@@ -206,6 +286,16 @@ export default async function BranchPage({
                     {isAr ? 'احصل على الاتجاهات' : 'Get directions'}
                   </a>
                 )}
+                {whatsappDigits && (
+                  <a
+                    href={`https://wa.me/${whatsappDigits}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full border border-[var(--color-brand-espresso,#3B1F0E)] px-4 py-2.5 text-center text-sm font-semibold text-[var(--color-brand-espresso,#3B1F0E)] no-underline transition hover:bg-[var(--color-brand-espresso,#3B1F0E)] hover:text-white"
+                  >
+                    WhatsApp
+                  </a>
+                )}
                 {branch.phone && (
                   <a
                     href={`tel:${branch.phone.replace(/\s+/g, '')}`}
@@ -216,6 +306,8 @@ export default async function BranchPage({
                 )}
               </div>
             </section>
+
+            <BranchQr isAr={isAr} url={pageUrl} name={name} />
 
             {branch.openingHours && (
               <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
@@ -228,6 +320,9 @@ export default async function BranchPage({
         </div>
       </main>
       <SiteFooter locale={typedLocale} />
+      <BranchMobileBar isAr={isAr} directionsUrl={directionsUrl} phone={branch.phone} />
+      {/* Spacer so the sticky bar never covers the footer on phones */}
+      <div aria-hidden className="h-20 md:hidden" />
     </>
   );
 }

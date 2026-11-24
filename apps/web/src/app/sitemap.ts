@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { sanityFetch } from '@/lib/sanity/client';
+import { BRANCHES_FALLBACK } from '@/lib/branches-fallback';
 
 const BASE_URL = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'https://milestonescoffee.com';
 
@@ -17,7 +18,12 @@ const BRANCHES_SITEMAP_QUERY = `
 `;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const branches = await sanityFetch<SlimBranch[]>(BRANCHES_SITEMAP_QUERY);
+  const cmsBranches = await sanityFetch<SlimBranch[]>(BRANCHES_SITEMAP_QUERY);
+  // Same fallback the branch pages use until the CMS has branches.
+  const branches: SlimBranch[] =
+    cmsBranches && cmsBranches.length > 0
+      ? cmsBranches
+      : BRANCHES_FALLBACK.map((b) => ({ slug: b.slug, _updatedAt: new Date().toISOString() }));
 
   const staticRoutes: MetadataRoute.Sitemap = [
     // Redirect root → /en handled by middleware; include canonical /en
@@ -59,7 +65,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const branchRoutes: MetadataRoute.Sitemap = (branches ?? []).flatMap((b) => [
+  const branchRoutes: MetadataRoute.Sitemap = branches.flatMap((b) => [
     {
       url: `${BASE_URL}/en/locations/${b.slug}`,
       lastModified: new Date(b._updatedAt),
