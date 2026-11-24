@@ -20,7 +20,7 @@ import {
   corporatePage,
 } from './src/schemas/documents';
 
-const projectId = process.env['SANITY_STUDIO_PROJECT_ID'] ?? '';
+const projectId = process.env['SANITY_STUDIO_PROJECT_ID'] || 'txh3gqgo'; // public project ID
 const dataset = process.env['SANITY_STUDIO_DATASET'] ?? 'production';
 
 if (!projectId) {
