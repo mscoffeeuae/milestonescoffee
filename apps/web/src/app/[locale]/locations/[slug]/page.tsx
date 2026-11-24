@@ -8,6 +8,7 @@ import { BRANCHES_FALLBACK } from '@/lib/branches-fallback';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { BranchStatus, WeeklyHours, type OpeningHours } from '@/components/locations/branch-status';
+import { BranchTools } from '@/components/locations/branch-tools';
 
 export const dynamic = 'force-dynamic';
 
@@ -181,6 +182,16 @@ export default async function BranchPage({
 
           {/* Sidebar */}
           <aside className="space-y-6">
+            <BranchTools
+              isAr={isAr}
+              slug={branch.slug}
+              name={name}
+              address={address}
+              coords={c}
+              others={(BRANCHES_FALLBACK as Branch[]).flatMap((b) =>
+                b.coordinates ? [{ name: isAr ? b.nameAr : b.nameEn, slug: b.slug, lat: b.coordinates.lat, lng: b.coordinates.lng }] : [],
+              )}
+            />
             <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
               <h2 className="mb-2 text-lg font-bold text-[var(--color-brand-espresso,#3B1F0E)]">{isAr ? 'العنوان' : 'Address'}</h2>
               {address && <address className="text-sm not-italic text-black/60">{address}</address>}
