@@ -14,6 +14,7 @@ import { BranchMobileBar } from '@/components/locations/branch-mobile-bar';
 import { BranchGallery } from '@/components/locations/branch-gallery';
 import { BranchNearby } from '@/components/locations/branch-nearby';
 import { BranchQr } from '@/components/locations/branch-qr';
+import { BranchDirections } from '@/components/locations/branch-directions';
 import { distanceKm } from '@/lib/geo';
 
 export const dynamic = 'force-dynamic';
@@ -46,6 +47,12 @@ interface Branch {
 }
 
 const SUPPORTED_LOCALES: Locale[] = ['en', 'ar'];
+
+// Service keys surfaced in the accessibility section (labels come from SERVICES below).
+const ACCESS_KEYS = ['accessible', 'parking', 'prayer-room'] as const;
+
+// Print: show only name, address and hours, in black on white.
+const PRINT_CSS = '@media print{header,footer,iframe{display:none!important}.branch-hero{background:#fff!important;color:#000!important}.branch-hero *{color:#000!important;background:none!important}.branch-hero [aria-hidden]{display:none!important}}';
 
 const SCHEMA_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
@@ -180,6 +187,8 @@ export default async function BranchPage({
     ...(branch.openingHours ? { openingHoursSpecification: openingHoursSpec(branch.openingHours) } : {}),
     ...(branch.googleMapsUrl ? { hasMap: branch.googleMapsUrl } : {}),
   };
+  const accessItems = ACCESS_KEYS.filter((k) => branch.services?.includes(k));
+  const otherLocale = isAr ? 'en' : 'ar';
   const mapSrc = c
     ? `https://www.openstreetmap.org/export/embed.html?bbox=${c.lng - 0.006},${c.lat - 0.004},${c.lng + 0.006},${c.lat + 0.004}&layer=mapnik&marker=${c.lat},${c.lng}`
     : null;
@@ -191,10 +200,11 @@ export default async function BranchPage({
         // Escape "<" so branch text can never close the script tag.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\u003c') }}
       />
+      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <SiteHeader locale={typedLocale} />
       <main id="main-content" className="min-h-screen bg-[var(--color-brand-ivory,#F5F0E8)]">
         {/* Hero */}
-        <section className="relative overflow-hidden bg-[var(--color-brand-espresso,#3B1F0E)] text-white">
+        <section className="branch-hero relative overflow-hidden bg-[var(--color-brand-espresso,#3B1F0E)] text-white">
           <div
             aria-hidden
             className="absolute inset-0 opacity-20"
@@ -208,6 +218,14 @@ export default async function BranchPage({
               <span className="mx-2" aria-hidden>/</span>
               <span>{emirateName}</span>
             </nav>
+            <Link
+              href={`/${otherLocale}/locations/${slug}`}
+              hrefLang={otherLocale}
+              lang={otherLocale}
+              className="mt-3 inline-block rounded-full border border-white/40 px-3 py-1 text-xs font-semibold text-white no-underline hover:bg-white/10 print:hidden"
+            >
+              {isAr ? 'English' : 'العربية'}
+            </Link>
             <h1 className="mt-3 text-3xl md:text-5xl font-bold" style={{ color: '#fff' }}>{name}</h1>
             {!isAr && branch.nameAr && (
               <p className="mt-1 text-lg text-white/70" dir="rtl" lang="ar">{branch.nameAr}</p>
@@ -221,11 +239,13 @@ export default async function BranchPage({
         <div className="container mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main column */}
           <div className="lg:col-span-2 space-y-8">
+            <div className="print:hidden">
             <BranchGallery
               isAr={isAr}
               name={name}
               images={[...(branch.heroImage ? [branch.heroImage] : []), ...(branch.galleryImages ?? [])]}
             />
+            </div>
 
             {mapSrc && (
               <iframe
@@ -251,7 +271,25 @@ export default async function BranchPage({
               </section>
             )}
 
-            <BranchNearby isAr={isAr} locale={typedLocale} items={nearby} />
+            {accessItems.length > 0 && (
+              <section aria-labelledby="access-h" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                <h2 id="access-h" className="mb-4 text-xl font-bold text-[var(--color-brand-espresso,#3B1F0E)]">
+                  {isAr ? 'إمكانية الوصول والمرافق' : 'Accessibility & facilities'}
+                </h2>
+                <ul role="list" className="grid gap-2 text-sm sm:grid-cols-3">
+                  {accessItems.map((k) => (
+                    <li key={k} className="flex items-center gap-2">
+                      <span aria-hidden className="text-emerald-600">✓</span>
+                      {SERVICES[k]?.[isAr ? 1 : 0] ?? k}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <div className="print:hidden">
+              <BranchNearby isAr={isAr} locale={typedLocale} items={nearby} />
+            </div>
 
             <div>
               <Link href={`/${typedLocale}/locations`} className="text-sm font-semibold text-[var(--color-brand-bronze,#A0784A)] no-underline hover:underline">
@@ -262,6 +300,7 @@ export default async function BranchPage({
 
           {/* Sidebar */}
           <aside className="space-y-6">
+            <div className="print:hidden">
             <BranchTools
               isAr={isAr}
               slug={branch.slug}
@@ -272,6 +311,7 @@ export default async function BranchPage({
                 b.coordinates ? [{ name: isAr ? b.nameAr : b.nameEn, slug: b.slug, lat: b.coordinates.lat, lng: b.coordinates.lng }] : [],
               )}
             />
+            </div>
             <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
               <h2 className="mb-2 text-lg font-bold text-[var(--color-brand-espresso,#3B1F0E)]">{isAr ? 'العنوان' : 'Address'}</h2>
               {address && <address className="text-sm not-italic text-black/60">{address}</address>}
@@ -305,9 +345,12 @@ export default async function BranchPage({
                   </a>
                 )}
               </div>
+              <BranchDirections isAr={isAr} coords={c} address={address} />
             </section>
 
-            <BranchQr isAr={isAr} url={pageUrl} name={name} />
+            <div className="print:hidden">
+              <BranchQr isAr={isAr} url={pageUrl} name={name} />
+            </div>
 
             {branch.openingHours && (
               <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
