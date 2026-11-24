@@ -132,10 +132,10 @@ export default async function HomePage({ params }: HomePageProps) {
                   : "Looking for the best coffee shop in Abu Dhabi? Check out Milestones Coffee — with branches across the emirates, we're bringing you specialty coffee rooted in Emirati heritage."}
               </p>
               <div style={{ display: 'flex', gap: 'var(--spacing-md)', flexWrap: 'wrap' }}>
-                <a href={`/${locale}/menu`} style={{ display: 'inline-flex', alignItems: 'center', padding: '0.9rem 2rem', background: 'var(--color-brand-espresso)', color: 'var(--color-brand-ivory)', textDecoration: 'none', borderRadius: 'var(--radius-sm)', fontWeight: 600, boxShadow: '0 8px 20px rgba(59,31,14,.25)' }}>
+                <a href={`/${locale}/menu`} className="ms-btn ms-btn-primary">
                   {isAr ? 'القائمة' /* [PLACEHOLDER] */ : 'View Menu'}
                 </a>
-                <a href={`/${locale}/locations`} style={{ display: 'inline-flex', alignItems: 'center', padding: '0.9rem 2rem', color: 'var(--color-brand-espresso)', textDecoration: 'none', borderRadius: 'var(--radius-sm)', fontWeight: 600, border: '2px solid var(--color-brand-espresso)' }}>
+                <a href={`/${locale}/locations`} className="ms-btn ms-btn-secondary">
                   {isAr ? 'فروعنا' /* [PLACEHOLDER] */ : 'Find a Branch'}
                 </a>
               </div>
@@ -170,7 +170,7 @@ export default async function HomePage({ params }: HomePageProps) {
           <ul role="list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--spacing-xl)', listStyle: 'none', padding: 0, margin: 0 }}>
             {cards.map((c) => (
               <li key={c.title}>
-                <a href={c.href} className="ms-card" style={{ display: 'block', height: '100%', background: '#fff', borderRadius: 16, padding: '2rem', textDecoration: 'none', color: 'inherit', boxShadow: '0 4px 14px rgba(59,31,14,.08)', border: '1px solid rgba(201,168,124,.35)' }}>
+                <a href={c.href} className="ms-card ms-surface ms-pad" style={{ display: 'block', height: '100%', textDecoration: 'none', color: 'inherit' }}>
                   <span style={{ display: 'inline-flex', width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', background: 'var(--color-brand-ivory)', marginBottom: '1rem' }}>
                     <Icon d={c.icon} />
                   </span>

@@ -20,7 +20,7 @@ export function BranchNearby({ isAr, locale, items }: { isAr: boolean; locale: s
           <li key={b.slug}>
             <Link
               href={`/${locale}/locations/${b.slug}`}
-              className="block h-full rounded-2xl bg-white p-4 no-underline shadow-sm ring-1 ring-black/5 transition hover:ring-[var(--color-brand-gold,#C9A87C)]"
+              className="ms-surface ms-pad block h-full no-underline transition hover:border-[var(--color-brand-bronze-light,#C9A87C)]"
             >
               <span className="block font-semibold text-[var(--color-brand-espresso,#3B1F0E)]">{b.name}</span>
               <span className="mt-1 block text-xs text-black/50">{b.area}</span>

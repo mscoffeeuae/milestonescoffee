@@ -125,8 +125,48 @@ html {
 
 /* Focus visible — high contrast ring for keyboard navigation */
 :focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+/* Dark surfaces: bronze ring is low-contrast on espresso, use the light bronze */
+.branch-hero :focus-visible,
+.ms-on-dark :focus-visible {
+  outline-color: var(--color-brand-bronze-light);
+}
+
+/* ─── Shared card + button styles (branch pages, locations list, homepage) ── */
+@layer components {
+  .ms-surface {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+  }
+  .ms-pad { padding: var(--spacing-md); }
+  @media (min-width: 640px) { .ms-pad { padding: var(--spacing-lg); } }
+
+  .ms-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.625rem 1.5rem;
+    border: 2px solid var(--color-brand-espresso);
+    border-radius: var(--radius-full);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--duration-micro), color var(--duration-micro), border-color var(--duration-micro);
+  }
+  .ms-btn-primary { background: var(--color-brand-espresso); color: var(--color-brand-ivory); }
+  .ms-btn-primary:hover { background: var(--color-interactive-hover); border-color: var(--color-interactive-hover); color: #fff; }
+  .ms-btn-secondary { background: transparent; color: var(--color-brand-espresso); }
+  .ms-btn-secondary:hover { background: var(--color-brand-espresso); color: var(--color-brand-ivory); }
+  .ms-btn-sm { min-height: 40px; padding: 0.5rem 1rem; font-size: 0.8125rem; }
 }
 
 /* Skip to content link */

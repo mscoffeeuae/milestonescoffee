@@ -26,7 +26,7 @@ export function BranchDirections({ isAr, coords, address }: BranchDirectionsProp
               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=${m.mode}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-[44px] items-center justify-center rounded-full border border-[var(--color-brand-espresso,#3B1F0E)] px-2 text-center text-xs font-semibold text-[var(--color-brand-espresso,#3B1F0E)] no-underline transition hover:bg-[var(--color-brand-espresso,#3B1F0E)] hover:text-white"
+              className="ms-btn ms-btn-secondary ms-btn-sm w-full"
             >
               {isAr ? m.ar : m.en}
             </a>

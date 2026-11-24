@@ -96,11 +96,11 @@ export function WeeklyHours({ hours, isAr }: { hours: OpeningHours; isAr: boolea
   const [today, setToday] = useState<string | null>(null);
   useEffect(() => setToday(dubaiNow().day), []);
   return (
-    <table className="w-full text-xs">
+    <table className="w-full border-separate border-spacing-y-1 text-sm">
       <tbody>
         {DAYS.map((d) => {
           const sl = slot(hours, d);
-          const label = isAr ? DAY_AR[d] : d.charAt(0).toUpperCase() + d.slice(1, 3);
+          const label = isAr ? DAY_AR[d] : d.charAt(0).toUpperCase() + d.slice(1);
           const val =
             sl === null
               ? isAr ? 'مغلق' : 'Closed'
@@ -108,9 +108,16 @@ export function WeeklyHours({ hours, isAr }: { hours: OpeningHours; isAr: boolea
                 ? '—'
                 : `${hours[`${d}Open`]} – ${hours[`${d}Close`]}`;
           return (
-            <tr key={d} className={d === today ? 'font-semibold text-[var(--color-brand-espresso,#3B1F0E)]' : 'text-black/60'}>
-              <td className="py-0.5 pe-3">{label}</td>
-              <td className="py-0.5 text-end tabular-nums" dir="ltr">{val}</td>
+            <tr
+              key={d}
+              aria-current={d === today ? 'date' : undefined}
+              className={d === today ? 'bg-[var(--color-brand-ivory,#F5F0E8)] font-semibold text-[var(--color-brand-espresso,#3B1F0E)]' : 'text-black/60'}
+            >
+              <th scope="row" className="rounded-s-lg px-3 py-1.5 text-start font-[inherit]">
+                {label}
+                {d === today && <span className="ms-2 text-xs font-bold text-[var(--color-brand-bronze,#A0784A)]">{isAr ? '· اليوم' : '· Today'}</span>}
+              </th>
+              <td className="rounded-e-lg px-3 py-1.5 text-end tabular-nums" dir="ltr">{val}</td>
             </tr>
           );
         })}

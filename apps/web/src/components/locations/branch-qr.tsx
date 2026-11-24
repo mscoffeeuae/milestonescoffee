@@ -4,7 +4,7 @@ import QRCode from 'qrcode';
 export async function BranchQr({ isAr, url, name }: { isAr: boolean; url: string; name: string }) {
   const svg = await QRCode.toString(url, { type: 'svg', margin: 1, width: 160, color: { dark: '#3B1F0E', light: '#FFFFFF' } });
   return (
-    <section className="rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-black/5">
+    <section className="ms-surface ms-pad text-center">
       <h2 className="mb-3 text-lg font-bold text-[var(--color-brand-espresso,#3B1F0E)]">
         {isAr ? 'شارك هذا الفرع' : 'Share this branch'}
       </h2>

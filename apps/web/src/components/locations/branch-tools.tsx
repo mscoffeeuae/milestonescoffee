@@ -97,13 +97,12 @@ export function BranchTools({ isAr, slug, name, address, coords, others }: Branc
         .slice(0, 3)
     : [];
 
-  const btn =
-    'inline-flex min-h-[44px] items-center justify-center rounded-full border px-4 text-sm font-semibold transition';
+  const btn = 'ms-btn ms-btn-secondary ms-btn-sm';
 
   return (
     <section
       aria-labelledby="branch-tools-h"
-      className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+      className="ms-surface ms-pad"
     >
       <h2 id="branch-tools-h" className="mb-3 text-lg font-bold text-[var(--color-brand-espresso,#3B1F0E)]">
         {isAr ? 'أدوات الفرع' : 'Branch tools'}
@@ -127,15 +126,15 @@ export function BranchTools({ isAr, slug, name, address, coords, others }: Branc
       </dl>
 
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={locate} disabled={locating} aria-pressed={here !== null} className={`${btn} border-[var(--color-brand-espresso,#3B1F0E)] text-[var(--color-brand-espresso,#3B1F0E)] hover:bg-[var(--color-brand-espresso,#3B1F0E)] hover:text-white disabled:opacity-60`}>
+        <button type="button" onClick={locate} disabled={locating} aria-pressed={here !== null} className={`${btn} disabled:opacity-60`}>
           {locating ? (isAr ? 'جارٍ التحديد…' : 'Locating…') : isAr ? 'استخدم موقعي' : 'Use my location'}
         </button>
         {address && (
-          <button type="button" onClick={copyAddress} className={`${btn} border-[var(--color-brand-espresso,#3B1F0E)] text-[var(--color-brand-espresso,#3B1F0E)] hover:bg-[var(--color-brand-espresso,#3B1F0E)] hover:text-white`}>
+          <button type="button" onClick={copyAddress} className={btn}>
             {isAr ? 'نسخ العنوان' : 'Copy address'}
           </button>
         )}
-        <button type="button" onClick={share} className={`${btn} border-[var(--color-brand-espresso,#3B1F0E)] text-[var(--color-brand-espresso,#3B1F0E)] hover:bg-[var(--color-brand-espresso,#3B1F0E)] hover:text-white`}>
+        <button type="button" onClick={share} className={btn}>
           {isAr ? 'مشاركة' : 'Share'}
         </button>
       </div>

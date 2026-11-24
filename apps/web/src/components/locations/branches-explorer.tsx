@@ -256,7 +256,7 @@ export function BranchesExplorer({ branches, locale }: { branches: ExplorerBranc
 
       {/* Nearest strip */}
       {nearest.length > 0 && (
-        <section aria-labelledby="near-h" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-[var(--color-brand-gold,#C9A87C)]/40">
+        <section aria-labelledby="near-h" className="ms-surface ms-pad">
           <h2 id="near-h" className="mb-4 text-xl font-bold text-[var(--color-brand-espresso,#3B1F0E)]">
             {isAr ? 'أقرب ٣ فروع إليك' : 'Your 3 nearest branches'}
           </h2>
@@ -305,7 +305,7 @@ export function BranchesExplorer({ branches, locale }: { branches: ExplorerBranc
                   <li
                     key={b._id}
                     id={`b-${b.slug}`}
-                    className="group flex scroll-mt-40 flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-lg"
+                    className="group flex scroll-mt-40 flex-col ms-surface overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg"
                   >
                     <div className="relative h-36 overflow-hidden bg-gradient-to-br from-[var(--color-brand-espresso,#3B1F0E)] to-[var(--color-brand-bronze,#A0784A)]">
                       <span aria-hidden className="absolute inset-0 flex items-center justify-center text-5xl text-[var(--color-brand-gold,#C9A87C)]/60">☕</span>
@@ -319,7 +319,7 @@ export function BranchesExplorer({ branches, locale }: { branches: ExplorerBranc
                       )}
                     </div>
 
-                    <div className="flex flex-1 flex-col p-5">
+                    <div className="ms-pad flex flex-1 flex-col">
                       <h3 className="text-lg font-semibold text-[var(--color-brand-espresso,#3B1F0E)]">
                         <Link href={`/${locale}/locations/${b.slug}`} className="no-underline hover:underline">
                           {name}
@@ -361,7 +361,7 @@ export function BranchesExplorer({ branches, locale }: { branches: ExplorerBranc
                             href={b.googleMapsUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="min-w-[7rem] flex-1 rounded-full bg-[var(--color-brand-espresso,#3B1F0E)] px-4 py-2 text-center text-sm font-semibold text-white no-underline transition hover:bg-[var(--color-brand-bronze,#A0784A)]"
+                            className="ms-btn ms-btn-primary ms-btn-sm min-w-[7rem] flex-1"
                           >
                             {isAr ? 'الاتجاهات' : 'Directions'}
                           </a>
@@ -369,7 +369,7 @@ export function BranchesExplorer({ branches, locale }: { branches: ExplorerBranc
                         {b.phone && (
                           <a
                             href={`tel:${b.phone.replace(/\s+/g, '')}`}
-                            className="min-w-[7rem] flex-1 rounded-full border border-[var(--color-brand-espresso,#3B1F0E)] px-4 py-2 text-center text-sm font-semibold text-[var(--color-brand-espresso,#3B1F0E)] no-underline transition hover:bg-[var(--color-brand-espresso,#3B1F0E)] hover:text-white"
+                            className="ms-btn ms-btn-secondary ms-btn-sm min-w-[7rem] flex-1"
                           >
                             <span dir="ltr">{isAr ? 'اتصل' : 'Call'}</span>
                           </a>
