@@ -112,3 +112,17 @@ export const CORPORATE_PAGE_QUERY = `
     seo { titleEn, titleAr, descriptionEn, descriptionAr, ogImage { asset->{ url } }, noIndex }
   }
 `;
+
+/** Homepage featured row: editor-flagged products first, topped up with other active ones (max 6). */
+export const FEATURED_PRODUCTS_QUERY = `
+  *[_type == "menuProduct" && isActive == true] | order(isFeatured desc, sortOrder asc)[0...6] {
+    _id,
+    nameEn,
+    nameAr,
+    descriptionEn,
+    descriptionAr,
+    displayPriceAed,
+    isNew,
+    productImage { asset->{ url } }
+  }
+`;

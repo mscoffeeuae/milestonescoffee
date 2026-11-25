@@ -3,12 +3,20 @@ import type { Locale } from '@milestones/contracts';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { BRANCHES_FALLBACK } from '@/lib/branches-fallback';
+import { sanityFetch } from '@/lib/sanity/client';
+import { BRANCHES_QUERY, FEATURED_PRODUCTS_QUERY, OFFERS_QUERY } from '@/lib/sanity/queries';
+import { OpenNowBanner } from '@/components/home/open-now-banner';
+import type { OpeningHours } from '@/components/locations/branch-status';
+import { CateringCta, FaqSection, FeaturedDrinks, OfferBanner, type FeaturedProduct, type HomeOffer } from '@/components/home/home-sections';
 
 interface HomePageProps {
   params: Promise<{ locale: string }>;
 }
 
 const supportedLocales: Locale[] = ['en', 'ar'];
+
+// CMS-driven sections refresh every 5 minutes without a redeploy.
+export const revalidate = 300;
 
 // Motion + layout for the homepage. Reduced-motion users get static visuals.
 const CSS = `
@@ -84,6 +92,16 @@ export default async function HomePage({ params }: HomePageProps) {
   const branchCount = BRANCHES_FALLBACK.length;
   const emirateCount = new Set(BRANCHES_FALLBACK.map((b) => b.emirate)).size;
 
+  const [cmsBranches, featured, offers] = await Promise.all([
+    sanityFetch<{ openingHours: OpeningHours | null }[]>(BRANCHES_QUERY),
+    sanityFetch<FeaturedProduct[]>(FEATURED_PRODUCTS_QUERY),
+    sanityFetch<HomeOffer[]>(OFFERS_QUERY),
+  ]);
+  // Same CMS-first / fallback rule as the locations page.
+  const hoursList = (cmsBranches && cmsBranches.length > 0 ? cmsBranches : (BRANCHES_FALLBACK as { openingHours: OpeningHours | null }[])).map((b) => b.openingHours ?? null);
+  const offer = offers?.[0] ?? null;
+  const featuredProducts = featured ?? [];
+
   const cards = [
     {
       href: `/${locale}/menu`,
@@ -112,6 +130,8 @@ export default async function HomePage({ params }: HomePageProps) {
       </a>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <SiteHeader locale={locale as Locale} />
+      <OpenNowBanner hours={hoursList} locale={locale} />
+      {offer && <OfferBanner offer={offer} locale={locale} />}
       <main id="main-content">
         {/* Hero */}
         <section aria-label={isAr ? 'القسم الرئيسي' /* [PLACEHOLDER] */ : 'Hero'} className="ms-home-hero" style={{ padding: 'clamp(3rem, 8vw, 6rem) var(--spacing-xl)' }}>
@@ -162,6 +182,8 @@ export default async function HomePage({ params }: HomePageProps) {
           </dl>
         </section>
 
+        {featuredProducts.length > 0 && <FeaturedDrinks products={featuredProducts} locale={locale} />}
+
         {/* Feature cards */}
         <section aria-labelledby="home-features" className="container mx-auto" style={{ padding: 'clamp(3rem, 7vw, 5rem) var(--spacing-lg)' }}>
           <h2 id="home-features" style={{ textAlign: 'center', fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: 'var(--color-brand-espresso)', marginBottom: 'var(--spacing-2xl)' }}>
@@ -200,6 +222,9 @@ export default async function HomePage({ params }: HomePageProps) {
             </a>
           </div>
         </section>
+
+        <CateringCta locale={locale} />
+        <FaqSection locale={locale} />
       </main>
       <SiteFooter locale={locale as Locale} />
     </>
