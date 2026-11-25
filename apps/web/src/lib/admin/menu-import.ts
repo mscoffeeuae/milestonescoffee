@@ -333,7 +333,8 @@ export async function buildPlan(
 
     // Fields
     if (raw.name_en.length < 2 || raw.name_en.length > 100) errors.push('name_en is required (2–100 characters)');
-    if (raw.name_ar.length < 2 || raw.name_ar.length > 100) errors.push('name_ar is required (2–100 characters)');
+    // name_ar may be blank only on rows that end up hidden (checked below once `hidden` is known).
+    if (raw.name_ar && (raw.name_ar.length < 2 || raw.name_ar.length > 100)) errors.push('name_ar must be 2–100 characters');
     const cat = raw.category ? catLookup.get(norm(raw.category)) : undefined;
     if (!raw.category) errors.push('category is missing');
     else if (!cat) errors.push(`unknown category "${raw.category}"`);
@@ -357,6 +358,8 @@ export async function buildPlan(
     if (featured === 'bad') errors.push(`invalid featured "${raw.featured}" (true or false)`);
     const hidden = toBool(raw.hidden);
     if (hidden === 'bad') errors.push(`invalid hidden "${raw.hidden}" (true or false)`);
+    const willBeVisible = hidden === null ? Boolean(existing?.isActive) : hidden === false;
+    if (!raw.name_ar && willBeVisible) errors.push('name_ar is required unless the row is hidden');
     const dietary = toFlags(raw.dietary_flags, DIET, 'dietary flag', errors);
     const allergens = toFlags(raw.allergens, ALLERGEN, 'allergen', errors);
 
