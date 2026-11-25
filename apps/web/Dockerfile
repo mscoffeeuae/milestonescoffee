@@ -12,7 +12,8 @@ RUN pnpm install --frozen-lockfile && pnpm --filter web build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
-ENV NODE_ENV=production PORT=3005 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
+ARG GIT_COMMIT_SHA=unknown
+ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA NODE_ENV=production PORT=3005 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder --chown=app:app /repo/apps/web/.next/standalone ./
 COPY --from=builder --chown=app:app /repo/apps/web/.next/static ./apps/web/.next/static

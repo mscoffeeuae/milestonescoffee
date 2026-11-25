@@ -39,6 +39,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_SANITY_PROJECT_ID=txh3gqgo
             NEXT_PUBLIC_SANITY_DATASET=production
+            GIT_COMMIT_SHA=${{ github.sha }}
 
   deploy:
     needs: build

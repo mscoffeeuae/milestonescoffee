@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { ADMIN_COOKIE, verifySessionToken } from '@/lib/admin/session';
 
 /** Supported locales — matches contracts/LocaleSchema */
 const SUPPORTED_LOCALES = ['en', 'ar'] as const;
@@ -43,8 +44,17 @@ function detectLocale(request: NextRequest): Locale {
  * - Paths with valid locale prefix → pass through unchanged
  * - Static assets and API routes → skip
  */
-export function proxy(request: NextRequest): NextResponse {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
+
+  // Admin area: not localized; everything except /admin/login needs a valid session cookie.
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    const isLogin = pathname === '/admin/login' || pathname === '/admin/login/';
+    if (!isLogin && !(await verifySessionToken(request.cookies.get(ADMIN_COOKIE)?.value))) {
+      return NextResponse.redirect(new URL('/admin/login', request.url), { status: 307 });
+    }
+    return NextResponse.next();
+  }
 
   // Skip Next.js internals and static assets
   if (
