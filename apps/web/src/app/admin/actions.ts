@@ -2,19 +2,15 @@
 
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import {
-  ADMIN_COOKIE,
-  ADMIN_SESSION_SECONDS,
-  adminConfigured,
-  checkPassword,
-  createSessionToken,
-} from '@/lib/admin/session';
+import { ADMIN_COOKIE, ADMIN_SESSION_SECONDS, createSessionToken } from '@/lib/admin/session';
+import { MIN_PASSWORD_LENGTH, passwordConfigured, savePassword, verifyPassword } from '@/lib/admin/auth-store';
+import { requireAdmin } from '@/lib/admin/guard';
 import { ADMIN_LANG_COOKIE } from '@/lib/admin/i18n';
 
 export async function loginAction(formData: FormData): Promise<void> {
-  if (!adminConfigured()) redirect('/admin/login?error=config');
+  if (!(await passwordConfigured())) redirect('/admin/login?error=config');
   const password = String(formData.get('password') ?? '');
-  if (!(await checkPassword(password))) {
+  if (!(await verifyPassword(password))) {
     await new Promise((r) => setTimeout(r, 800)); // slow down guessing
     redirect('/admin/login?error=1');
   }
@@ -28,6 +24,30 @@ export async function loginAction(formData: FormData): Promise<void> {
     maxAge: ADMIN_SESSION_SECONDS,
   });
   redirect('/admin');
+}
+
+/** Session cookie is left untouched; result is reported via ?pw=… on the settings page. */
+export async function changePasswordAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const current = String(formData.get('current') ?? '');
+  const next = String(formData.get('next') ?? '');
+  const confirm = String(formData.get('confirm') ?? '');
+  const done = (code: string): never => redirect(`/admin/settings?pw=${code}`);
+
+  if (!(await verifyPassword(current))) {
+    await new Promise((r) => setTimeout(r, 800));
+    done('wrong');
+  }
+  if (next !== confirm) done('mismatch');
+  if (next.length < MIN_PASSWORD_LENGTH) done('short');
+  if (next === current) done('same');
+  try {
+    await savePassword(next);
+  } catch (err) {
+    console.error('[admin] could not save password', err instanceof Error ? err.message : err);
+    done('error');
+  }
+  done('ok');
 }
 
 export async function logoutAction(): Promise<void> {

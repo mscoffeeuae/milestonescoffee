@@ -67,6 +67,18 @@ const dict = {
   page: { en: 'Page', ar: 'الصفحة' },
   source: { en: 'Source', ar: 'المصدر' },
   country: { en: 'Country', ar: 'الدولة' },
+  changePassword: { en: 'Change password', ar: 'تغيير كلمة المرور' },
+  currentPassword: { en: 'Current password', ar: 'كلمة المرور الحالية' },
+  newPassword: { en: 'New password', ar: 'كلمة المرور الجديدة' },
+  confirmPassword: { en: 'Repeat new password', ar: 'أعد كتابة كلمة المرور الجديدة' },
+  pwHint: { en: 'At least 12 characters.', ar: '١٢ حرفاً على الأقل.' },
+  pwOk: { en: 'Password changed. Use the new password next time you sign in.', ar: 'تم تغيير كلمة المرور. استخدم الجديدة عند تسجيل الدخول لاحقاً.' },
+  pwWrong: { en: 'The current password is incorrect.', ar: 'كلمة المرور الحالية غير صحيحة.' },
+  pwMismatch: { en: 'The new passwords do not match.', ar: 'كلمتا المرور الجديدتان غير متطابقتين.' },
+  pwShort: { en: 'The new password must be at least 12 characters.', ar: 'يجب أن تتكون كلمة المرور الجديدة من ١٢ حرفاً على الأقل.' },
+  pwSame: { en: 'The new password must differ from the current one.', ar: 'يجب أن تختلف كلمة المرور الجديدة عن الحالية.' },
+  pwError: { en: 'Could not save the password on the server. Nothing was changed.', ar: 'تعذر حفظ كلمة المرور على الخادم. لم يتم تغيير شيء.' },
+  signOutLink: { en: 'Sign out of this session', ar: 'تسجيل الخروج من هذه الجلسة' },
 } as const;
 
 export type AdminKey = keyof typeof dict;
