@@ -45,8 +45,52 @@ export default async function MenuPage({
   const itemCount = categories.reduce((n, c) => n + c.products.length, 0);
   const newCount = categories.reduce((n, c) => n + c.products.filter((p) => p.isNew).length, 0);
 
+  // schema.org Menu > MenuSection > MenuItem, names in the page language. Never emitted for dev demo data.
+  const DIETS: Record<string, string> = {
+    vegan: 'https://schema.org/VeganDiet',
+    vegetarian: 'https://schema.org/VegetarianDiet',
+    'gluten-free': 'https://schema.org/GlutenFreeDiet',
+    halal: 'https://schema.org/HalalDiet',
+  };
+  const jsonLd = isDemo
+    ? null
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'Menu',
+        name: isAr ? 'قائمة ميلستونز كوفي' : 'Milestones Coffee Menu',
+        inLanguage: typedLocale,
+        hasMenuSection: categories.map((c) => ({
+          '@type': 'MenuSection',
+          name: (isAr && c.nameAr) || c.nameEn,
+          ...((isAr ? c.descriptionAr || c.descriptionEn : c.descriptionEn) && {
+            description: isAr ? c.descriptionAr || c.descriptionEn : c.descriptionEn,
+          }),
+          hasMenuItem: c.products.map((p) => {
+            const desc = isAr ? p.descriptionAr || p.descriptionEn : p.descriptionEn;
+            const diets = (p.dietaryFlags ?? []).map((f) => DIETS[f]).filter(Boolean);
+            return {
+              '@type': 'MenuItem',
+              name: (isAr && p.nameAr) || p.nameEn,
+              ...(desc && { description: desc }),
+              ...(p.productImage?.asset.url && { image: p.productImage.asset.url }),
+              ...(diets.length > 0 && { suitableForDiet: diets }),
+              ...(p.displayPriceAed != null && {
+                offers: { '@type': 'Offer', price: p.displayPriceAed, priceCurrency: 'AED' },
+              }),
+            };
+          }),
+        })),
+      };
+
   return (
     <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          // "<" escaped so CMS text can never close the script tag.
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+        />
+      )}
       <SiteHeader locale={typedLocale} />
       <main id="main-content" className="min-h-screen bg-[var(--color-brand-ivory,#F5F0E8)]">
 {isDemo && (

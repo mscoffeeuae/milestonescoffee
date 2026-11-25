@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export interface MenuProduct {
   _id: string;
@@ -50,6 +50,8 @@ const DIET_LABELS: Record<string, [string, string, string]> = {
   'dairy-free': ['Dairy-free', 'خالٍ من الألبان', '🥛'],
 };
 
+const FAV_KEY = 'ms-menu-favourites';
+
 const label = (map: Record<string, string[]>, key: string, isAr: boolean) =>
   map[key] ? map[key][isAr ? 1 : 0] : key;
 
@@ -60,6 +62,31 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
   const [avoid, setAvoid] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [sort, setSort] = useState<'default' | 'asc' | 'desc'>('default');
+  const [favs, setFavs] = useState<string[]>([]);
+  const [onlyFavs, setOnlyFavs] = useState(false);
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+
+  // Favourites live in localStorage only; every access is guarded (private mode / blocked storage).
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FAV_KEY);
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) setFavs(parsed.filter((x): x is string => typeof x === 'string'));
+    } catch {
+      /* storage unavailable or corrupt: start empty */
+    }
+  }, []);
+  const toggleFav = useCallback((id: string) => {
+    setFavs((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try {
+        localStorage.setItem(FAV_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, []);
 
   const toggle = (list: string[], set: (v: string[]) => void, v: string) =>
     set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
@@ -88,6 +115,7 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
             const hay = `${p.nameEn} ${p.nameAr} ${p.descriptionEn ?? ''} ${p.descriptionAr ?? ''}`.toLowerCase();
             if (!hay.includes(q)) return false;
           }
+          if (onlyFavs && !favs.includes(p._id)) return false;
           if (diets.length && !diets.every((d) => p.dietaryFlags?.includes(d))) return false;
           if (avoid.length && avoid.some((a) => p.allergens?.includes(a))) return false;
           return true;
@@ -104,14 +132,44 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
               ),
             },
       );
-  }, [categories, query, diets, avoid, sort]);
+  }, [categories, query, diets, avoid, sort, onlyFavs, favs]);
+
+  // Scroll-spy: highlight the tab for the section nearest the top of the viewport.
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const ids = filtered.map((c) => c.slug);
+    const els = ids.map((id) => document.getElementById(id)).filter((el): el is HTMLElement => !!el);
+    if (!els.length) return;
+    const visible = new Set<string>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) visible.add(e.target.id);
+          else visible.delete(e.target.id);
+        }
+        const first = ids.find((id) => visible.has(id));
+        if (first) setActiveCat(first);
+      },
+      { rootMargin: '-160px 0px -55% 0px' },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [filtered]);
+
+  // Keep the active tab visible inside the horizontally scrolling bar (never scrolls the page).
+  useEffect(() => {
+    if (!activeCat) return;
+    const tab = document.querySelector<HTMLElement>(`[data-cat-tab="${activeCat}"]`);
+    const nav = tab?.closest('nav');
+    if (tab && nav) nav.scrollTo({ left: tab.offsetLeft - nav.clientWidth / 2 + tab.clientWidth / 2, behavior: 'smooth' });
+  }, [activeCat]);
 
   const featured = useMemo(
     () => filtered.flatMap((c) => c.products.filter((p) => p.isFeatured)).slice(0, 4),
     [filtered],
   );
   const shown = filtered.reduce((n, c) => n + c.products.length, 0);
-  const activeCount = diets.length + avoid.length + (query ? 1 : 0);
+  const activeCount = diets.length + avoid.length + (query ? 1 : 0) + (onlyFavs ? 1 : 0);
 
   return (
     <>
@@ -119,7 +177,7 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
       <div className="sticky top-0 z-20 bg-[var(--color-brand-ivory,#F5F0E8)]/95 backdrop-blur border-b border-black/5 shadow-sm">
         <div className="container mx-auto px-4 py-3 space-y-3">
           <div className="flex gap-2">
-            <label className="relative flex-1">
+            <label className="relative min-w-0 flex-1">
               <span className="sr-only">{isAr ? 'ابحث في القائمة' : 'Search the menu'}</span>
               <span aria-hidden className="absolute inset-y-0 start-3 flex items-center text-[var(--color-brand-bronze,#A0784A)]">⌕</span>
               <input
@@ -134,7 +192,7 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
               value={sort}
               onChange={(e) => setSort(e.target.value as 'default' | 'asc' | 'desc')}
               aria-label={isAr ? 'ترتيب' : 'Sort'}
-              className="shrink-0 rounded-full border border-black/10 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-gold,#C9A87C)]"
+              className="min-w-0 max-w-[9rem] shrink-0 rounded-full border border-black/10 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-gold,#C9A87C)]"
             >
               <option value="default">{isAr ? 'الترتيب الافتراضي' : 'Default order'}</option>
               <option value="asc">{isAr ? 'السعر: من الأقل' : 'Price: low to high'}</option>
@@ -155,8 +213,24 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
             </button>
           </div>
 
-          {showFilters && (availDiets.length > 0 || availAllergens.length > 0) && (
+          {showFilters && (availDiets.length > 0 || availAllergens.length > 0 || favs.length > 0) && (
             <div className="space-y-2 pb-1">
+              {favs.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    aria-pressed={onlyFavs}
+                    onClick={() => setOnlyFavs((v) => !v)}
+                    className={`rounded-full px-3 py-1 text-xs border transition ${
+                      onlyFavs
+                        ? 'bg-[var(--color-brand-espresso,#3B1F0E)] text-white border-[var(--color-brand-espresso,#3B1F0E)]'
+                        : 'bg-white border-black/10 hover:border-[var(--color-brand-bronze,#A0784A)]'
+                    }`}
+                  >
+                    ♥ {isAr ? 'المفضلة' : 'Favourites'} ({favs.length})
+                  </button>
+                </div>
+              )}
               {availDiets.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-black/50">{isAr ? 'النظام الغذائي' : 'Dietary'}</span>
@@ -200,7 +274,7 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
               {activeCount > 0 && (
                 <button
                   type="button"
-                  onClick={() => { setQuery(''); setDiets([]); setAvoid([]); }}
+                  onClick={() => { setQuery(''); setDiets([]); setAvoid([]); setOnlyFavs(false); }}
                   className="text-xs underline text-[var(--color-brand-bronze,#A0784A)]"
                 >
                   {isAr ? 'مسح الكل' : 'Clear all'}
@@ -215,7 +289,11 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
                 <li key={cat._id}>
                   <a
                     href={`#${cat.slug}`}
-                    className="no-underline inline-flex items-center gap-1.5 rounded-full bg-white border border-black/10 px-3.5 py-1.5 text-sm font-medium text-[var(--color-brand-espresso,#3B1F0E)] hover:bg-[var(--color-brand-espresso,#3B1F0E)] hover:text-white transition-colors"
+                    data-cat-tab={cat.slug}
+                    aria-current={activeCat === cat.slug ? 'true' : undefined}
+                    className={`no-underline inline-flex items-center gap-1.5 rounded-full border border-black/10 px-3.5 py-1.5 text-sm font-medium transition-colors hover:bg-[var(--color-brand-espresso,#3B1F0E)] hover:text-white ${
+                      activeCat === cat.slug ? 'bg-[var(--color-brand-espresso,#3B1F0E)] text-white' : 'bg-white text-[var(--color-brand-espresso,#3B1F0E)]'
+                    }`}
                   >
                     {isAr ? cat.nameAr : cat.nameEn}
                     <span className="text-xs opacity-60">{cat.products.length}</span>
@@ -241,7 +319,7 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
             </h2>
             <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" role="list">
               {featured.map((p) => (
-                <ProductCard key={`f-${p._id}`} product={p} isAr={isAr} compact />
+                <ProductCard key={`f-${p._id}`} product={p} isAr={isAr} compact fav={favs.includes(p._id)} onFav={toggleFav} />
               ))}
             </ul>
           </section>
@@ -265,7 +343,7 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
               </div>
               <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="list">
                 {category.products.map((p) => (
-                  <ProductCard key={p._id} product={p} isAr={isAr} />
+                  <ProductCard key={p._id} product={p} isAr={isAr} fav={favs.includes(p._id)} onFav={toggleFav} />
                 ))}
               </ul>
             </section>
@@ -281,7 +359,7 @@ export function MenuBrowser({ categories, locale }: { categories: MenuCategory[]
   );
 }
 
-function ProductCard({ product: p, isAr, compact }: { product: MenuProduct; isAr: boolean; compact?: boolean }) {
+function ProductCard({ product: p, isAr, compact, fav, onFav }: { product: MenuProduct; isAr: boolean; compact?: boolean; fav: boolean; onFav: (id: string) => void }) {
   const name = isAr ? p.nameAr : p.nameEn;
   const desc = isAr ? p.descriptionAr : p.descriptionEn;
   return (
@@ -290,7 +368,7 @@ function ProductCard({ product: p, isAr, compact }: { product: MenuProduct; isAr
         p.isFeatured ? 'ring-2 ring-[var(--color-brand-gold,#C9A87C)]' : 'ring-black/5'
       }`}
     >
-      <div className={`relative overflow-hidden ${compact ? 'h-40' : 'h-52'} bg-gradient-to-br from-[var(--color-brand-espresso,#3B1F0E)] to-[var(--color-brand-bronze,#A0784A)]`}>
+      <div className={`relative overflow-hidden ${compact ? 'h-44' : 'h-56 sm:h-60'} bg-gradient-to-br from-[var(--color-brand-espresso,#3B1F0E)] to-[var(--color-brand-bronze,#A0784A)]`}>
         {p.productImage?.asset.url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -316,6 +394,16 @@ function ProductCard({ product: p, isAr, compact }: { product: MenuProduct; isAr
             </span>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => onFav(p._id)}
+          aria-pressed={fav}
+          aria-label={`${isAr ? 'إضافة إلى المفضلة: ' : 'Favourite: '}${name}`}
+          className="absolute top-3 end-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-lg shadow focus-visible:outline-2 focus-visible:outline-[var(--color-focus-ring)]"
+          style={{ color: fav ? 'var(--color-error)' : 'var(--color-text-muted)' }}
+        >
+          <span aria-hidden>{fav ? '♥' : '♡'}</span>
+        </button>
         {p.displayPriceAed != null && (
           <span className="absolute bottom-3 end-3 rounded-full bg-white/95 px-3 py-1 text-sm font-bold text-[var(--color-brand-espresso,#3B1F0E)] shadow">
             {isAr ? `${p.displayPriceAed} د.إ` : `AED ${p.displayPriceAed}`}
