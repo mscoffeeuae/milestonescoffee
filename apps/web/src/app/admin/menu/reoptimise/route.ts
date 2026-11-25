@@ -1,3 +1,4 @@
+import { logActivity } from '@/lib/admin/activity';
 import { isAdmin } from '@/lib/admin/guard';
 import { listImageStatus, reoptimiseProduct, writeConfigured } from '@/lib/admin/menu-data';
 import { ImageError } from '@/lib/admin/image-optimise';
@@ -30,7 +31,10 @@ export async function POST(request: Request): Promise<Response> {
   if (!/^[\w.-]{1,128}$/.test(id)) return json({ ok: false, code: 'id' }, 400);
   try {
     const result = await reoptimiseProduct(id);
-    if (result === 'done') for (const p of ['/en/menu', '/ar/menu', '/en', '/ar']) revalidatePath(p);
+    if (result === 'done') {
+      await logActivity({ action: 'edit', entityType: 'menu', entityId: id, label: id, detail: 'image re-optimised' });
+      for (const p of ['/en/menu', '/ar/menu', '/en', '/ar']) revalidatePath(p);
+    }
     return json({ ok: true, result });
   } catch (err) {
     const message = err instanceof ImageError ? err.message : err instanceof Error ? err.message.slice(0, 160) : 'failed';

@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { logoutAction, setLangAction } from '@/app/admin/actions';
 import type { AdminLang, T } from '@/lib/admin/i18n';
+import { QuickSearch } from './quick-search';
 
 const NAV = [
   { href: '/admin', key: 'dashboard' },
   { href: '/admin/branches', key: 'branches' },
   { href: '/admin/menu', key: 'menu' },
+  { href: '/admin/offers', key: 'offers' },
+  { href: '/admin/activity', key: 'activity' },
   { href: '/admin/analytics', key: 'analytics' },
   { href: '/admin/settings', key: 'settings' },
 ] as const;
@@ -34,6 +37,15 @@ export function AdminShell({ children, lang, t, authed }: { children: React.Reac
             </nav>
           )}
           <div className="ms-auto flex items-center gap-2">
+            {authed && (
+              <QuickSearch
+                lang={lang}
+                labels={{
+                  button: t('quickSearch'), placeholder: t('searchPlaceholder'), none: t('searchNone'), hint: t('searchHint'), loading: t('searchLoading'),
+                  types: { menu: t('st_menu'), branch: t('st_branch'), offer: t('st_offer'), page: t('st_page') },
+                }}
+              />
+            )}
             <form action={setLangAction}>
               <input type="hidden" name="to" value={lang === 'ar' ? 'en' : 'ar'} />
               <button type="submit" className={btn}>{t('language')}</button>

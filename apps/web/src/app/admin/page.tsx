@@ -2,6 +2,8 @@ import { requireAdmin } from '@/lib/admin/guard';
 import { formatDubai, getT } from '@/lib/admin/lang';
 import { getSnapshot, sortWorstFirst, studioEditUrl, type MissingField } from '@/lib/admin/data';
 import { getGaReport } from '@/lib/admin/ga4';
+import { getHealth } from '@/lib/admin/health';
+import { HealthAlerts } from '@/components/admin/health-alerts';
 import { Card, ConnectGa, Stat, StatusBadge, Table, td, th } from '@/components/admin/ui';
 import { GaOverview } from '@/components/admin/ga-panels';
 
@@ -12,11 +14,14 @@ export default async function DashboardPage() {
   const count = (f: MissingField) => snap.branches.filter((b) => b.missing.includes(f)).length;
   const open = snap.branches.filter((b) => b.state === 'open').length;
   const rows = sortWorstFirst(snap.branches);
+  const health = await getHealth(snap);
 
   return (
     <div className="space-y-[var(--spacing-xl)]">
       <h1 className="text-2xl font-semibold" style={{ fontFamily: 'var(--font-heading)' }}>{t('dashboard')}</h1>
       {snap.usingFallback && <p className="text-sm text-[var(--color-warning)]">{t('fallbackNote')}</p>}
+
+      <HealthAlerts groups={health.groups} branches={health.branches} t={t} />
 
       <div className="grid grid-cols-2 gap-[var(--spacing-md)] md:grid-cols-4">
         <Stat label={t('totalBranches')} value={snap.branches.length} />

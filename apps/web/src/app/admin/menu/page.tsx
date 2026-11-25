@@ -5,32 +5,42 @@ import { getT } from '@/lib/admin/lang';
 import { listCategories, listProducts, writeConfigured } from '@/lib/admin/menu-data';
 import { Card, Table, td, th } from '@/components/admin/ui';
 import { ReoptimiseButton } from '@/components/admin/reoptimise-button';
-import { deleteProductAction, toggleActiveAction } from './actions';
+import { BulkSelectAll } from '@/components/admin/bulk-select-all';
+import { bulkAction, deleteProductAction, toggleActiveAction } from './actions';
 
 const field =
   'rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-[var(--color-bg-base)] px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-[var(--color-focus-ring)]';
 const smallBtn =
   'rounded-[var(--radius-md)] border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)]';
 
-const MSG = { saved: 'msgSaved', updated: 'msgUpdated', deleted: 'msgDeleted', error: 'msgError' } as const;
+const MSG = {
+  saved: 'msgSaved', updated: 'msgUpdated', deleted: 'msgDeleted', error: 'msgError',
+  bulknone: 'msgBulkNone', bulkmany: 'msgBulkTooMany', bulkamount: 'msgBulkAmount', bulkconfirm: 'msgBulkConfirm',
+} as const;
+const ISSUES = { noar: 'noArabic', hidden: 'hiddenItems', unoptimised: 'unoptimised' } as const;
+const ERROR_MSGS = ['error', 'bulknone', 'bulkmany', 'bulkamount', 'bulkconfirm'];
 
 export default async function AdminMenuPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; cat?: string; msg?: string }>;
+  searchParams: Promise<{ q?: string; cat?: string; msg?: string; issue?: string; n?: string; s?: string }>;
 }) {
   await requireAdmin();
-  const { q = '', cat = '', msg } = await searchParams;
+  const { q = '', cat = '', msg, issue = '', n, s } = await searchParams;
   const { lang, t } = await getT();
   const [products, categories] = await Promise.all([listProducts(), listCategories()]);
 
   const needle = q.trim().toLowerCase();
   const list = products.filter((p) => {
     if (cat && p.categoryId !== cat) return false;
+    if (issue === 'noar' && p.nameAr?.trim()) return false;
+    if (issue === 'hidden' && p.isActive) return false;
+    if (issue === 'unoptimised' && !(p.imageUrl && !p.imageMeta)) return false;
     if (needle && !`${p.nameEn} ${p.nameAr ?? ''}`.toLowerCase().includes(needle)) return false;
     return true;
   });
   const msgKey = msg && msg in MSG ? MSG[msg as keyof typeof MSG] : null;
+  const issueKey = issue in ISSUES ? ISSUES[issue as keyof typeof ISSUES] : null;
 
   return (
     <div className="space-y-[var(--spacing-lg)]">
@@ -53,12 +63,23 @@ export default async function AdminMenuPage({
 
       {!writeConfigured() && <p role="alert" className="text-sm text-[var(--color-warning)]">{t('errConfig')}</p>}
       {msgKey && (
-        <p role={msg === 'error' ? 'alert' : 'status'} className="text-sm" style={{ color: msg === 'error' ? 'var(--color-error)' : 'var(--color-success)' }}>
+        <p role={ERROR_MSGS.includes(msg ?? '') ? 'alert' : 'status'} className="text-sm" style={{ color: ERROR_MSGS.includes(msg ?? '') ? 'var(--color-error)' : 'var(--color-success)' }}>
           {t(msgKey)}
+        </p>
+      )}
+      {msg === 'bulk' && (
+        <p role="status" className="text-sm text-[var(--color-success)]">
+          {t('msgBulkDone')} {Number(n) || 0}{Number(s) > 0 ? ` · ${t('msgBulkSkipped')} ${Number(s)}` : ''}
+        </p>
+      )}
+      {issueKey && (
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          {t('issueShowing')}: <strong>{t(issueKey)}</strong> ({list.length}) · <Link href="/admin/menu" className="underline hover:text-[var(--color-interactive-hover)]">{t('clearFilter')}</Link>
         </p>
       )}
 
       <form method="get" className="flex flex-wrap gap-2">
+        {issue && <input type="hidden" name="issue" value={issue} />}
         <input type="search" name="q" defaultValue={q} placeholder={t('search')} aria-label={t('search')} className={`${field} min-w-0 flex-1`} />
         <select name="cat" defaultValue={cat} aria-label={t('category')} className={field}>
           <option value="">{t('allCategories')}</option>
@@ -71,6 +92,39 @@ export default async function AdminMenuPage({
         </button>
       </form>
 
+      {/* Bulk toolbar. Row checkboxes join this form via form="bulk", so the per-row forms in the table are not nested. */}
+      <form id="bulk" action={bulkAction} aria-label={t('bulkActions')} className="flex flex-wrap items-start gap-2">
+        <button type="submit" name="op" value="none" tabIndex={-1} aria-hidden className="hidden" />
+        <button type="submit" name="op" value="show" className={smallBtn}>{t('bulkShow')}</button>
+        <button type="submit" name="op" value="hide" className={smallBtn}>{t('bulkHide')}</button>
+        <details className="relative">
+          <summary className={`${smallBtn} cursor-pointer list-none`}>{t('bulkPrice')}</summary>
+          <div className="absolute start-0 z-10 mt-1 w-72 max-w-[85vw] space-y-2 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-[var(--color-bg-elevated)] p-3 text-xs shadow-[var(--shadow-md)]">
+            <label className="block">
+              <span className="mb-1 block text-[var(--color-text-secondary)]">{t('bulkMode')}</span>
+              <select name="mode" defaultValue="fixed" className={`${field} w-full`}>
+                <option value="fixed">{t('modeFixed')}</option>
+                <option value="percent">{t('modePercent')}</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[var(--color-text-secondary)]">{t('bulkAmount')}</span>
+              <input name="amount" type="number" step="0.01" inputMode="decimal" className={`${field} w-full`} />
+            </label>
+            <button type="submit" name="op" value="price" className="rounded-[var(--radius-md)] bg-[var(--color-interactive)] px-3 py-1.5 text-white">{t('bulkApplyPrice')}</button>
+          </div>
+        </details>
+        {/* Delete only submits from inside the opened panel, and only with the box ticked. */}
+        <details className="relative">
+          <summary className={`${smallBtn} cursor-pointer list-none text-[var(--color-error)]`}>{t('bulkDelete')}</summary>
+          <div className="absolute start-0 z-10 mt-1 w-72 max-w-[85vw] space-y-2 rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-[var(--color-bg-elevated)] p-3 text-xs shadow-[var(--shadow-md)]">
+            <p className="text-[var(--color-text-primary)]">{t('bulkDeleteWarn')}</p>
+            <label className="flex items-start gap-2"><input type="checkbox" name="confirmDelete" className="mt-0.5" /> {t('bulkUnderstand')}</label>
+            <button type="submit" name="op" value="delete" className="rounded-[var(--radius-md)] bg-[var(--color-error)] px-3 py-1.5 text-white">{t('delYes')}</button>
+          </div>
+        </details>
+      </form>
+
       <Card>
         {list.length === 0 ? (
           <p className="text-sm text-[var(--color-text-muted)]">{t('noResults')}</p>
@@ -78,6 +132,7 @@ export default async function AdminMenuPage({
           <Table>
             <thead>
               <tr>
+                <th className={th}><BulkSelectAll label={t('selectAll')} /></th>
                 <th className={th} />
                 <th className={th}>{t('nameEn')}</th>
                 <th className={th}>{t('category')}</th>
@@ -89,6 +144,9 @@ export default async function AdminMenuPage({
             <tbody>
               {list.map((p) => (
                 <tr key={p._id}>
+                  <td className={td}>
+                    <input type="checkbox" name="ids" value={p._id} form="bulk" aria-label={`${t('selectItem')}: ${p.nameEn}`} />
+                  </td>
                   <td className={td}>
                     {p.imageUrl ? (
                       // Lists use the 600px thumbnail (falls back to the full image for items not yet optimised).

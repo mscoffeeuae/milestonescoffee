@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { logActivity } from '@/lib/admin/activity';
 import { requireAdmin } from '@/lib/admin/guard';
 import { addGalleryImages, MAX_GALLERY, removeGalleryImage } from '@/lib/admin/branch-gallery-data';
 import { ImageError, MAX_INPUT_BYTES, validateImage } from '@/lib/admin/image-optimise';
@@ -45,6 +46,7 @@ export async function addGalleryAction(formData: FormData): Promise<void> {
     console.error('[admin/gallery] add failed', msg);
     back(id, `err=${msg === 'gallery-full' ? 'full' : err instanceof ImageError ? 'imagetype' : 'save'}`);
   }
+  await logActivity({ action: 'edit', entityType: 'branch', entityId: id, label: id, detail: `${prepared.length} gallery photo(s) added` });
   refresh();
   back(id, 'msg=added');
 }
@@ -61,6 +63,7 @@ export async function removeGalleryAction(formData: FormData): Promise<void> {
     console.error('[admin/gallery] remove failed', err instanceof Error ? err.message : err);
     back(id, 'err=save');
   }
+  await logActivity({ action: 'edit', entityType: 'branch', entityId: id, label: id, detail: 'gallery photo removed' });
   refresh();
   back(id, 'msg=removed');
 }

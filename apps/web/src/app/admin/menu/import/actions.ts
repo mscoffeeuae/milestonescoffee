@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { logActivity } from '@/lib/admin/activity';
 import { requireAdmin } from '@/lib/admin/guard';
 import { listCategories, listProducts, writeConfigured } from '@/lib/admin/menu-data';
 import { applyPlan, buildPlan } from '@/lib/admin/menu-import';
@@ -26,6 +27,12 @@ export async function confirmImportAction(formData: FormData): Promise<void> {
   }
   const summary = await applyPlan(plan);
   await saveSummary(token, summary);
+  await logActivity({
+    action: 'import',
+    entityType: 'import',
+    label: `${summary.created + summary.updated} items imported`,
+    detail: `created ${summary.created}, updated ${summary.updated}, unchanged ${summary.unchanged}, skipped (errors) ${summary.skippedInvalid}, failed ${summary.failed}`,
+  });
   for (const p of ['/en/menu', '/ar/menu', '/en', '/ar']) revalidatePath(p);
   redirect(`/admin/menu/import?t=${token}&done=1`);
 }

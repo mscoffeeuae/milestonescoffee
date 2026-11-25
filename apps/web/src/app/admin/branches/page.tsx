@@ -10,16 +10,17 @@ const field =
 export default async function BranchesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; emirate?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; emirate?: string; status?: string; missing?: string }>;
 }) {
   await requireAdmin();
-  const { q = '', emirate = '', status = '' } = await searchParams;
+  const { q = '', emirate = '', status = '', missing = '' } = await searchParams;
   const { lang, t } = await getT();
   const snap = await getSnapshot();
 
   const needle = q.trim().toLowerCase();
   const list = snap.branches.filter((b) => {
     if (emirate && b.emirate !== emirate) return false;
+    if (missing && !b.missing.includes(missing as never)) return false;
     if (status === 'open' && b.state !== 'open') return false;
     if (status === 'closed' && b.state !== 'closed') return false;
     if (needle && !`${b.nameEn} ${b.nameAr ?? ''} ${b.slug}`.toLowerCase().includes(needle)) return false;
@@ -33,6 +34,7 @@ export default async function BranchesPage({
       {snap.usingFallback && <p className="text-sm text-[var(--color-warning)]">{t('fallbackNote')}</p>}
 
       <form method="get" className="flex flex-wrap gap-2">
+        {missing && <input type="hidden" name="missing" value={missing} />}
         <input type="search" name="q" defaultValue={q} placeholder={t('search')} aria-label={t('search')} className={`${field} min-w-0 flex-1`} />
         <select name="emirate" defaultValue={emirate} aria-label={t('emirate')} className={field}>
           <option value="">{t('allEmirates')}</option>

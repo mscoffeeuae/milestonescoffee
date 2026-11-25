@@ -3,3 +3,4 @@ export { menuCategory } from './menu-category';
 export { menuProduct } from './menu-product';
 export { offer } from './offer';
 export { corporatePage } from './corporate-page';
+export { adminActivity } from './admin-activity';

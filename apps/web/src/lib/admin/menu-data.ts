@@ -291,3 +291,68 @@ export async function listImageStatus(): Promise<{ id: string; optimised: boolea
   );
   return rows;
 }
+
+/* ── Bulk operations (all in one Sanity transaction per call) ─────────────── */
+
+export const BULK_MAX = 200;
+
+export async function bulkSetActive(ids: string[], active: boolean): Promise<void> {
+  const c = need();
+  const tx = c.transaction();
+  for (const id of ids) tx.patch(id, (p) => p.set({ isActive: active }));
+  await tx.commit();
+}
+
+/** Removes the published documents and any Studio drafts. */
+export async function bulkDelete(ids: string[]): Promise<void> {
+  const c = need();
+  const tx = c.transaction();
+  for (const id of ids) tx.delete(id).delete(`drafts.${id}`);
+  await tx.commit();
+}
+
+export interface PriceChange { id: string; name: string; from: number; to: number }
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Adds a fixed AED amount, or a percentage, to the display price of each item.
+ * Items with no price, or whose new price would fall outside 0–10,000, are skipped.
+ */
+export async function bulkAdjustPrice(
+  ids: string[],
+  mode: 'fixed' | 'percent',
+  amount: number,
+): Promise<{ changed: PriceChange[]; skipped: number }> {
+  const c = need();
+  const rows = await c.fetch<{ _id: string; nameEn: string; displayPriceAed: number | null }[]>(
+    `*[_type == "menuProduct" && _id in $ids]{_id, nameEn, displayPriceAed}`,
+    { ids },
+  );
+  const changed: PriceChange[] = [];
+  let skipped = ids.length - rows.length;
+  for (const r of rows) {
+    if (r.displayPriceAed == null) { skipped++; continue; }
+    const to = round2(mode === 'fixed' ? r.displayPriceAed + amount : r.displayPriceAed * (1 + amount / 100));
+    if (!Number.isFinite(to) || to < 0 || to > 10000) { skipped++; continue; }
+    if (to !== r.displayPriceAed) changed.push({ id: r._id, name: r.nameEn, from: r.displayPriceAed, to });
+  }
+  if (changed.length > 0) {
+    const tx = c.transaction();
+    for (const ch of changed) tx.patch(ch.id, (p) => p.set({ displayPriceAed: ch.to }));
+    await tx.commit();
+  }
+  return { changed, skipped };
+}
+
+/** id -> English name, for activity labels. Unknown ids are omitted. */
+export async function productNames(ids: string[]): Promise<Record<string, string>> {
+  const c = client(false);
+  if (!c || ids.length === 0) return {};
+  try {
+    const rows = await c.fetch<{ _id: string; nameEn: string }[]>(`*[_type == "menuProduct" && _id in $ids]{_id, nameEn}`, { ids });
+    return Object.fromEntries(rows.map((r) => [r._id, r.nameEn]));
+  } catch {
+    return {};
+  }
+}

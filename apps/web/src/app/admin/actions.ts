@@ -1,5 +1,6 @@
 'use server';
 
+import { logActivity } from '@/lib/admin/activity';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ADMIN_COOKIE, ADMIN_SESSION_SECONDS, createSessionToken } from '@/lib/admin/session';
@@ -47,6 +48,7 @@ export async function changePasswordAction(formData: FormData): Promise<void> {
     console.error('[admin] could not save password', err instanceof Error ? err.message : err);
     done('error');
   }
+  await logActivity({ action: 'settings', entityType: 'settings', label: 'Admin password', detail: 'Password changed' });
   done('ok');
 }
 

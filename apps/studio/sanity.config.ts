@@ -17,6 +17,7 @@ import {
   menuCategory,
   menuProduct,
   offer,
+  adminActivity,
   corporatePage,
 } from './src/schemas/documents';
 
@@ -78,6 +79,7 @@ export default defineConfig({
       menuCategory,
       menuProduct,
       offer,
+      adminActivity,
       corporatePage,
     ],
   },

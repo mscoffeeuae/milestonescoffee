@@ -108,7 +108,7 @@ export const offer = defineType({
       name: 'validUntil',
       title: 'Valid until',
       type: 'datetime',
-      description: 'UTC datetime when this offer expires. Leave empty for open-ended.',
+      description: 'UTC datetime when this offer expires. Leave empty for open-ended. The website shows the offer only between Valid from and Valid until.',
     }),
     defineField({
       name: 'isActive',
