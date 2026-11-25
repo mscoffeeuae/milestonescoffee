@@ -33,6 +33,8 @@ const nextConfig: NextConfig = {
         hostname: 'milestonescoffee.ae',
         pathname: '/**',
       },
+      // Sanity asset CDN (menu and branch photos)
+      { protocol: 'https', hostname: 'cdn.sanity.io', pathname: '/images/**' },
     ],
   },
 

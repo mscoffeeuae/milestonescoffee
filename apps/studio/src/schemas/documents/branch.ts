@@ -149,7 +149,18 @@ export const branch = defineType({
       name: 'galleryImages',
       title: 'Gallery images',
       type: 'array',
-      of: [{ type: 'image', options: { hotspot: true } }],
+      of: [
+        {
+          type: 'image',
+          options: { hotspot: true },
+          fields: [
+            // Written by the web admin on upload (resized, WebP); safe to leave empty for Studio uploads.
+            defineField({ name: 'thumb', type: 'image', title: 'Thumbnail (600px)', readOnly: true }),
+            defineField({ name: 'avif', type: 'file', title: 'AVIF', readOnly: true }),
+            defineField({ name: 'imageMeta', type: 'imageOptimisation', title: 'Image optimisation details' }),
+          ],
+        },
+      ],
       validation: (rule) => rule.max(10),
     }),
 

@@ -1,6 +1,6 @@
-export interface GalleryImage {
-  asset: { url: string } | null;
-}
+import { CmsImage, type CmsImageSource } from '@/components/media/cms-image';
+
+export type GalleryImage = CmsImageSource;
 
 interface BranchGalleryProps {
   isAr: boolean;
@@ -10,7 +10,8 @@ interface BranchGalleryProps {
 
 /** Photo grid from CMS images; a neutral placeholder when the branch has none. */
 export function BranchGallery({ isAr, name, images }: BranchGalleryProps) {
-  const urls = images.flatMap((i) => (i.asset?.url ? [i.asset.url] : []));
+  const shown = images.filter((i) => Boolean(i.asset?.url));
+  const urls = shown.map((i) => i.asset!.url);
 
   if (urls.length === 0) {
     return (
@@ -30,14 +31,14 @@ export function BranchGallery({ isAr, name, images }: BranchGalleryProps) {
 
   return (
     <ul role="list" className="grid grid-cols-2 gap-3 md:grid-cols-3">
-      {urls.map((url, i) => (
-        <li key={url} className={i === 0 ? 'col-span-2 md:col-span-3' : ''}>
-          {/* Sanity CDN host is not in next/image remotePatterns; plain lazy img keeps the diff small. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`${url}?w=1200&auto=format`}
+      {shown.map((img, i) => (
+        <li key={urls[i]} className={i === 0 ? 'col-span-2 md:col-span-3' : ''}>
+          {/* Full-size image with intrinsic width/height + LQIP so the grid doesn't shift while loading. */}
+          <CmsImage
+            image={img}
             alt={`${name} ${i + 1}`}
-            loading={i === 0 ? 'eager' : 'lazy'}
+            sizes={i === 0 ? '(min-width: 768px) 960px, 100vw' : '(min-width: 768px) 320px, 50vw'}
+            priority={i === 0}
             className={`w-full rounded-2xl object-cover ring-1 ring-black/5 ${i === 0 ? 'h-56 md:h-80' : 'h-32 md:h-44'}`}
           />
         </li>

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/admin/guard';
+import { ImageError, validateImage } from '@/lib/admin/image-optimise';
 import {
   ALLERGEN_OPTIONS,
   DIETARY_OPTIONS,
@@ -15,7 +16,8 @@ import {
 } from '@/lib/admin/menu-data';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+const imageCode = (err: unknown) => (err instanceof ImageError ? (err.code === 'size' ? 'imagesize' : err.code === 'decode' ? 'imagedecode' : 'imagetype') : 'save');
 
 /** Public pages that show menu data. */
 function refreshPublic() {
@@ -58,9 +60,14 @@ export async function saveProductAction(formData: FormData): Promise<void> {
   let image: ImageFile | null = null;
   const file = formData.get('image');
   if (file instanceof File && file.size > 0) {
-    if (!IMAGE_TYPES.includes(file.type)) fail(id, 'imagetype');
     if (file.size > MAX_IMAGE_BYTES) fail(id, 'imagesize');
+    // The real type comes from the file contents, not the extension or declared MIME type.
     image = { bytes: Buffer.from(await file.arrayBuffer()), filename: file.name, contentType: file.type };
+    try {
+      await validateImage(image.bytes);
+    } catch (err) {
+      fail(id, imageCode(err));
+    }
   }
 
   const input: ProductInput = {
@@ -81,7 +88,7 @@ export async function saveProductAction(formData: FormData): Promise<void> {
     await saveProduct(id, input, image, formData.get('removeImage') === 'on');
   } catch (err) {
     console.error('[admin/menu] save failed', err instanceof Error ? err.message : err);
-    fail(id, 'save');
+    fail(id, imageCode(err));
   }
   refreshPublic();
   redirect('/admin/menu?msg=saved');

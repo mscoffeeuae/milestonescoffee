@@ -72,7 +72,7 @@ export default async function MenuPage({
               '@type': 'MenuItem',
               name: (isAr && p.nameAr) || p.nameEn,
               ...(desc && { description: desc }),
-              ...(p.productImage?.asset.url && { image: p.productImage.asset.url }),
+              ...(p.productImage?.asset?.url && { image: p.productImage.asset.url }),
               ...(diets.length > 0 && { suitableForDiet: diets }),
               ...(p.displayPriceAed != null && {
                 offers: { '@type': 'Offer', price: p.displayPriceAed, priceCurrency: 'AED' },

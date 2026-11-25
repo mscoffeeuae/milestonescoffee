@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { CmsImage, type CmsImageSource } from '@/components/media/cms-image';
 
 export interface MenuProduct {
   _id: string;
@@ -14,7 +15,8 @@ export interface MenuProduct {
   dietaryFlags: string[] | null;
   isNew: boolean;
   isFeatured: boolean;
-  productImage: { asset: { url: string } } | null;
+  productImage: CmsImageSource | null;
+  productImageThumb?: CmsImageSource | null;
 }
 
 export interface MenuCategory {
@@ -369,13 +371,12 @@ function ProductCard({ product: p, isAr, compact, fav, onFav }: { product: MenuP
       }`}
     >
       <div className={`relative overflow-hidden ${compact ? 'h-44' : 'h-56 sm:h-60'} bg-gradient-to-br from-[var(--color-brand-espresso,#3B1F0E)] to-[var(--color-brand-bronze,#A0784A)]`}>
-        {p.productImage?.asset.url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={p.productImage.asset.url}
+        {p.productImage?.asset?.url ? (
+          <CmsImage
+            image={p.productImage}
             alt={name}
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
           />
         ) : (
           <span aria-hidden className="absolute inset-0 flex items-center justify-center text-5xl font-serif text-[var(--color-brand-gold,#C9A87C)]/70">

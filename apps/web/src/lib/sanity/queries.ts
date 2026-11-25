@@ -70,7 +70,8 @@ export const MENU_CATEGORIES_QUERY = `
       dietaryFlags,
       isNew,
       isFeatured,
-      productImage { asset->{ url, metadata { lqip, dimensions } }, hotspot, crop }
+      productImage { asset->{ url, metadata { lqip, dimensions } }, hotspot, crop },
+      productImageThumb { asset->{ url, metadata { lqip, dimensions } } }
     }
   }
 `;
@@ -123,6 +124,7 @@ export const FEATURED_PRODUCTS_QUERY = `
     descriptionAr,
     displayPriceAed,
     isNew,
-    productImage { asset->{ url } }
+    productImage { asset->{ url, metadata { lqip, dimensions } } },
+    productImageThumb { asset->{ url, metadata { lqip, dimensions } } }
   }
 `;

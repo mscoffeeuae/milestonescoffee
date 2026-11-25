@@ -1,4 +1,5 @@
 import { createClient, type SanityClient } from '@sanity/client';
+import { baseName, optimiseImage, type OptimisedImage } from './image-optimise';
 
 /**
  * Sanity access for the admin menu manager. Server-only: SANITY_API_WRITE_TOKEN is read
@@ -47,6 +48,24 @@ export interface AdminProduct {
   sortOrder: number | null;
   imageUrl: string | null;
   imageFilename: string | null;
+  imageThumbUrl: string | null;
+  imageLqip: string | null;
+  imageMeta: StoredImageMeta | null;
+}
+
+/** Stored on the document next to the image fields (see apps/studio imageOptimisation object). */
+export interface StoredImageMeta {
+  width: number;
+  height: number;
+  thumbWidth: number;
+  thumbHeight: number;
+  originalBytes: number;
+  fullBytes: number;
+  thumbBytes: number;
+  avifBytes: number | null;
+  keptOriginal: boolean;
+  originalFilename: string | null;
+  optimisedAt: string;
 }
 
 export interface AdminCategory {
@@ -83,7 +102,10 @@ const PRODUCT_FIELDS = `
   descriptionEn, descriptionAr, displayPriceAed, allergens, dietaryFlags,
   isActive, isNew, isFeatured, sortOrder,
   "imageUrl": productImage.asset->url,
-  "imageFilename": productImage.asset->originalFilename
+  "imageFilename": productImage.asset->originalFilename,
+  "imageThumbUrl": productImageThumb.asset->url,
+  "imageLqip": coalesce(productImageThumb.asset->metadata.lqip, productImage.asset->metadata.lqip),
+  imageMeta
 `;
 
 export async function listProducts(): Promise<AdminProduct[]> {
@@ -147,10 +169,46 @@ function need(): SanityClient {
   return c;
 }
 
-async function uploadImage(c: SanityClient, f: ImageFile) {
-  const asset = await c.assets.upload('image', f.bytes, { filename: f.filename, contentType: f.contentType });
-  return { _type: 'image' as const, asset: { _type: 'reference' as const, _ref: asset._id } };
+export interface UploadedImage {
+  image: { _type: 'image'; asset: { _type: 'reference'; _ref: string } };
+  thumb: { _type: 'image'; asset: { _type: 'reference'; _ref: string } };
+  avif: { _type: 'file'; asset: { _type: 'reference'; _ref: string } } | null;
+  meta: StoredImageMeta;
 }
+
+/** Optimise (throws ImageError for bad input) and upload full + thumbnail (+ AVIF when smaller). */
+export async function uploadOptimised(c: SanityClient, f: ImageFile, maxBytes?: number): Promise<UploadedImage> {
+  const o: OptimisedImage = await optimiseImage(f.bytes, maxBytes);
+  const stem = baseName(f.filename);
+  const ref = <T extends 'image' | 'file'>(type: T, id: string) => ({ _type: type, asset: { _type: 'reference' as const, _ref: id } });
+  const full = await c.assets.upload('image', o.full, { filename: `${stem}.${o.fullExt}`, contentType: o.fullType });
+  const thumb = await c.assets.upload('image', o.thumb, { filename: `${stem}-${o.thumbWidth}w.webp`, contentType: 'image/webp' });
+  const avif = o.avif ? await c.assets.upload('file', o.avif, { filename: `${stem}.avif`, contentType: 'image/avif' }) : null;
+  return {
+    image: ref('image', full._id),
+    thumb: ref('image', thumb._id),
+    avif: avif ? ref('file', avif._id) : null,
+    meta: {
+      width: o.width,
+      height: o.height,
+      thumbWidth: o.thumbWidth,
+      thumbHeight: o.thumbHeight,
+      originalBytes: o.originalBytes,
+      fullBytes: o.fullBytes,
+      thumbBytes: o.thumbBytes,
+      avifBytes: o.avifBytes,
+      keptOriginal: o.keptOriginal,
+      originalFilename: f.filename.split(/[\/]/).pop() ?? f.filename,
+      optimisedAt: new Date().toISOString(),
+    },
+  };
+}
+
+/** Field set written to a document for a freshly uploaded image. */
+function imageFields(u: UploadedImage) {
+  return { productImage: u.image, productImageThumb: u.thumb, imageMeta: u.meta, ...(u.avif ? { productImageAvif: u.avif } : {}) };
+}
+const IMAGE_UNSET = ['productImage', 'productImageThumb', 'productImageAvif', 'imageMeta'];
 
 /** Create (no id) or update (id). `image`: new file to upload; `removeImage`: clear the current one. */
 export async function saveProduct(id: string | null, input: ProductInput, image: ImageFile | null, removeImage: boolean): Promise<string> {
@@ -168,7 +226,7 @@ export async function saveProduct(id: string | null, input: ProductInput, image:
     sortOrder: input.sortOrder,
     ...(input.displayPriceAed != null ? { displayPriceAed: input.displayPriceAed } : {}),
   };
-  const productImage = image ? await uploadImage(c, image) : null;
+  const uploaded = image ? await uploadOptimised(c, image) : null;
 
   if (!id) {
     const base = slugify(input.nameEn);
@@ -179,7 +237,7 @@ export async function saveProduct(id: string | null, input: ProductInput, image:
       ...fields,
       slug: { _type: 'slug', current: slug },
       isNew: false,
-      ...(productImage ? { productImage } : {}),
+      ...(uploaded ? imageFields(uploaded) : {}),
     });
     return doc._id;
   }
@@ -187,8 +245,10 @@ export async function saveProduct(id: string | null, input: ProductInput, image:
   let patch = c.patch(id).set(fields);
   const unset: string[] = [];
   if (input.displayPriceAed == null) unset.push('displayPriceAed');
-  if (productImage) patch = patch.set({ productImage });
-  else if (removeImage) unset.push('productImage');
+  if (uploaded) {
+    patch = patch.set(imageFields(uploaded));
+    if (!uploaded.avif) unset.push('productImageAvif');
+  } else if (removeImage) unset.push(...IMAGE_UNSET);
   if (unset.length) patch = patch.unset(unset);
   await patch.commit();
   return id;
@@ -201,4 +261,33 @@ export async function setActive(id: string, active: boolean): Promise<void> {
 /** Removes the published document and any Studio draft of it. */
 export async function deleteProduct(id: string): Promise<void> {
   await need().transaction().delete(id).delete(`drafts.${id}`).commit();
+}
+
+/**
+ * Re-optimises the image already stored on a product. Returns 'skipped' when it was already
+ * optimised (re-encoding lossy WebP again would only lose quality) or has no image.
+ */
+export async function reoptimiseProduct(id: string): Promise<'done' | 'skipped'> {
+  const c = need();
+  const p = await getProduct(id);
+  if (!p || !p.imageUrl || p.imageMeta) return 'skipped';
+  const res = await fetch(p.imageUrl, { signal: AbortSignal.timeout(30_000) });
+  if (!res.ok) throw new Error(`download failed (${res.status})`);
+  const bytes = Buffer.from(await res.arrayBuffer());
+  // Existing assets may predate the 5 MB upload limit, so allow a larger source here.
+  const uploaded = await uploadOptimised(c, { bytes, filename: p.imageFilename ?? p.slug ?? 'image', contentType: res.headers.get('content-type') ?? '' }, 25 * 1024 * 1024);
+  let patch = c.patch(id).set(imageFields(uploaded));
+  if (!uploaded.avif) patch = patch.unset(['productImageAvif']);
+  await patch.commit();
+  return 'done';
+}
+
+/** Ids of products that have an image, split by whether they are already optimised. */
+export async function listImageStatus(): Promise<{ id: string; optimised: boolean }[]> {
+  const c = client(false);
+  if (!c) return [];
+  const rows = await c.fetch<{ id: string; optimised: boolean }[]>(
+    `*[_type == "menuProduct" && defined(productImage.asset)]{"id": _id, "optimised": defined(imageMeta.fullBytes)}`,
+  );
+  return rows;
 }

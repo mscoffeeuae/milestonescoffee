@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import { unzipSync } from 'fflate';
+import { ImageError, sniffImage, validateImage, type ImageKind } from './image-optimise';
 import {
   ALLERGEN_OPTIONS,
   DIETARY_OPTIONS,
@@ -130,7 +131,7 @@ export async function toXlsx(rows: (string | number)[][]): Promise<Buffer> {
 
 export function imageFilenameOf(p: AdminProduct): string {
   if (!p.imageUrl) return '';
-  return p.imageFilename || decodeURIComponent(p.imageUrl.split('/').pop() ?? '');
+  return p.imageMeta?.originalFilename || p.imageFilename || decodeURIComponent(p.imageUrl.split('/').pop() ?? '');
 }
 
 export function exportRows(products: AdminProduct[], categories: AdminCategory[], asNumbers: boolean): (string | number)[][] {
@@ -212,23 +213,19 @@ const sameSet = (a: string[] | null | undefined, b: string[]) => {
   return x === [...b].sort().join('|');
 };
 
-const EXT_TYPE: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
-
-function sniff(b: Uint8Array): string | null {
-  if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
-  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
-  if (b.length > 12 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
-  return null;
-}
+const EXT_TYPE: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', heic: 'image/heic' };
+const KIND_TYPE: Record<ImageKind, string> = { jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', heic: 'image/heic' };
 
 interface ZipImages {
   files: Map<string, { name: string; bytes: Uint8Array }>;
   tooBig: Set<string>;
+  /** key -> reason, for files whose contents are not a decodable image. */
+  invalid: Map<string, string>;
   error: string | null;
 }
 
-function readZip(zip: Buffer | null): ZipImages {
-  const res: ZipImages = { files: new Map(), tooBig: new Set(), error: null };
+async function readZip(zip: Buffer | null): Promise<ZipImages> {
+  const res: ZipImages = { files: new Map(), tooBig: new Set(), invalid: new Map(), error: null };
   if (!zip) return res;
   try {
     const entries = unzipSync(zip, {
@@ -246,6 +243,14 @@ function readZip(zip: Buffer | null): ZipImages {
     }
   } catch {
     res.error = 'The ZIP file could not be read.';
+    return res;
+  }
+  for (const [key, f] of res.files) {
+    try {
+      await validateImage(Buffer.from(f.bytes));
+    } catch (err) {
+      res.invalid.set(key, err instanceof ImageError ? err.message : 'Image could not be read.');
+    }
   }
   return res;
 }
@@ -277,7 +282,7 @@ export async function buildPlan(
   if (dataRows.length === 0) return fatal('The file has a header row but no items.');
   if (dataRows.length > LIMITS.rows) return fatal(`Too many rows: ${dataRows.length}. The limit is ${LIMITS.rows} per import.`);
 
-  const zipImgs = readZip(zip);
+  const zipImgs = await readZip(zip);
   if (zipImgs.error) return fatal(zipImgs.error);
 
   const byId = new Map(products.map((p) => [p._id, p]));
@@ -362,9 +367,12 @@ export async function buildPlan(
       const key = raw.image_filename.split('/').pop()!.toLowerCase();
       const found = zipImgs.files.get(key);
       if (found) {
-        const type = sniff(found.bytes);
+        const kind = sniffImage(found.bytes);
+        const type = kind ? KIND_TYPE[kind] : null;
         const claimed = EXT_TYPE[key.split('.').pop() ?? ''];
+        const bad = zipImgs.invalid.get(key);
         if (!type || type !== claimed) errors.push(`image "${raw.image_filename}" is not a valid ${claimed?.split('/')[1]?.toUpperCase()} file`);
+        else if (bad) errors.push(`image "${raw.image_filename}": ${bad}`);
         else image = { bytes: Buffer.from(found.bytes), filename: found.name, contentType: type };
       } else if (zipImgs.tooBig.has(key)) errors.push(`image "${raw.image_filename}" is larger than 5 MB`);
       else if (!(existing && raw.image_filename.toLowerCase() === currentImg.toLowerCase())) {

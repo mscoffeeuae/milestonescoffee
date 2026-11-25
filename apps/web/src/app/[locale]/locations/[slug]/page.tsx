@@ -35,8 +35,8 @@ interface Branch {
   services: string[] | null;
   phone: string | null;
   whatsapp?: string | null;
-  heroImage: { asset: { url: string } } | null;
-  galleryImages?: { asset: { url: string } | null }[] | null;
+  heroImage: { asset: { url: string; metadata?: { lqip?: string | null; dimensions?: { width: number; height: number } | null } | null } | null } | null;
+  galleryImages?: { asset: { url: string; metadata?: { lqip?: string | null; dimensions?: { width: number; height: number } | null } | null } | null }[] | null;
   seo: {
     titleEn: string | null;
     titleAr: string | null;

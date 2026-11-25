@@ -9,7 +9,7 @@ import { structureTool } from 'sanity/structure';
 import { visionTool } from '@sanity/vision';
 
 // Object types
-import { bilingualText, seoMetadata, openingHours } from './src/schemas/objects';
+import { bilingualText, seoMetadata, openingHours, imageOptimisation } from './src/schemas/objects';
 
 // Document types
 import {
@@ -71,6 +71,7 @@ export default defineConfig({
       bilingualText,
       seoMetadata,
       openingHours,
+      imageOptimisation,
 
       // Documents
       branch,

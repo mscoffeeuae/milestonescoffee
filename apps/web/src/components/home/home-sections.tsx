@@ -1,4 +1,6 @@
 /** Server-rendered homepage sections: featured drinks, offer banner, catering CTA, FAQ. */
+import { CmsImage, type CmsImageSource } from '@/components/media/cms-image';
+
 
 export interface FeaturedProduct {
   _id: string;
@@ -8,7 +10,8 @@ export interface FeaturedProduct {
   descriptionAr: string | null;
   displayPriceAed: number | null;
   isNew: boolean | null;
-  productImage: { asset: { url: string } } | null;
+  productImage: CmsImageSource | null;
+  productImageThumb?: CmsImageSource | null;
 }
 
 export interface HomeOffer {
@@ -48,10 +51,13 @@ export function FeaturedDrinks({ products, locale }: { products: FeaturedProduct
             <li key={p._id}>
               <a href={`/${locale}/menu`} className="ms-card ms-surface" style={{ display: 'block', height: '100%', overflow: 'hidden', textDecoration: 'none', color: 'inherit' }}>
                 <div style={{ aspectRatio: '4 / 3', background: 'var(--color-bg-muted)' }}>
-                  {p.productImage?.asset.url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.productImage.asset.url} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                  )}
+                  {/* Featured row is a list of small cards, so it uses the 600px thumbnail. */}
+                  <CmsImage
+                    image={p.productImageThumb?.asset?.url ? p.productImageThumb : p.productImage}
+                    alt=""
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                    className="block h-full w-full object-cover"
+                  />
                 </div>
                 <div style={{ padding: 'var(--spacing-md)' }}>
                   <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--color-brand-espresso)' }}>

@@ -1,8 +1,10 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/admin/guard';
 import { getT } from '@/lib/admin/lang';
 import { listCategories, listProducts, writeConfigured } from '@/lib/admin/menu-data';
 import { Card, Table, td, th } from '@/components/admin/ui';
+import { ReoptimiseButton } from '@/components/admin/reoptimise-button';
 import { deleteProductAction, toggleActiveAction } from './actions';
 
 const field =
@@ -45,6 +47,9 @@ export default async function AdminMenuPage({
         <a href="/admin/menu/export?format=xlsx" className={smallBtn}>{t('exportXlsx')}</a>
         <Link href="/admin/menu/import" className={smallBtn}>{t('importMenu')}</Link>
       </div>
+      <ReoptimiseButton
+        labels={{ button: t('reoptimise'), help: t('reoptimiseHelp'), working: t('reoptimising'), done: t('reoptimiseDone'), skipped: t('skipped'), failed: t('failed') }}
+      />
 
       {!writeConfigured() && <p role="alert" className="text-sm text-[var(--color-warning)]">{t('errConfig')}</p>}
       {msgKey && (
@@ -86,8 +91,16 @@ export default async function AdminMenuPage({
                 <tr key={p._id}>
                   <td className={td}>
                     {p.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={`${p.imageUrl}?w=80&h=80&fit=crop`} alt="" width={40} height={40} className="size-10 rounded-[var(--radius-sm)] object-cover" />
+                      // Lists use the 600px thumbnail (falls back to the full image for items not yet optimised).
+                      <Image
+                        src={p.imageThumbUrl ?? p.imageUrl}
+                        alt=""
+                        width={p.imageMeta?.thumbWidth ?? 80}
+                        height={p.imageMeta?.thumbHeight ?? 80}
+                        sizes="40px"
+                        {...(p.imageLqip ? { placeholder: 'blur' as const, blurDataURL: p.imageLqip } : {})}
+                        className="size-10 rounded-[var(--radius-sm)] object-cover"
+                      />
                     ) : (
                       <span className="block size-10 rounded-[var(--radius-sm)] bg-[var(--color-bg-muted)]" />
                     )}

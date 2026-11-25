@@ -1,8 +1,12 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { saveProductAction } from '@/app/admin/menu/actions';
 import { ALLERGEN_OPTIONS, DIETARY_OPTIONS, type AdminCategory, type AdminProduct } from '@/lib/admin/menu-data';
 import type { AdminLang, T } from '@/lib/admin/i18n';
 import { Card } from './ui';
+import { ImagePicker } from './image-picker';
+import { imagePickerLabels } from './image-labels';
+import { formatBytes } from '@/lib/admin/format-bytes';
 
 const input =
   'w-full rounded-[var(--radius-md)] border border-[var(--color-border-strong)] bg-[var(--color-bg-base)] px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-[var(--color-focus-ring)]';
@@ -11,7 +15,7 @@ const cap = 'mb-1 block text-[var(--color-text-secondary)]';
 
 const ERR = {
   config: 'errConfig', name: 'errName', category: 'errCategory', desc: 'errDesc', price: 'errPrice',
-  sort: 'errSort', imagetype: 'errImageType', imagesize: 'errImageSize', save: 'errSave',
+  sort: 'errSort', imagetype: 'errImageType', imagesize: 'errImageSize', imagedecode: 'errImageDecode', save: 'errSave',
 } as const;
 
 export function MenuForm({
@@ -96,17 +100,29 @@ export function MenuForm({
         </div>
 
         <div className="sm:col-span-2">
-          <label className={lbl}>
-            <span className={cap}>{t('image')}</span>
-            <input name="image" type="file" accept="image/jpeg,image/png,image/webp" className="text-sm" />
-          </label>
+          <ImagePicker label={t('image')} labels={imagePickerLabels(t)} />
           {product?.imageUrl && (
             <div className="mt-2 flex items-center gap-3 text-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${product.imageUrl}?w=160&h=160&fit=crop`} alt="" width={80} height={80} className="size-20 rounded-[var(--radius-md)] object-cover" />
-              <label className="inline-flex items-center gap-2">
-                <input type="checkbox" name="removeImage" /> {t('removeImage')}
-              </label>
+              <Image
+                src={product.imageThumbUrl ?? product.imageUrl}
+                alt=""
+                width={product.imageMeta?.thumbWidth ?? 160}
+                height={product.imageMeta?.thumbHeight ?? 160}
+                sizes="80px"
+                {...(product.imageLqip ? { placeholder: 'blur' as const, blurDataURL: product.imageLqip } : {})}
+                className="size-20 rounded-[var(--radius-md)] object-cover"
+              />
+              <div className="text-xs text-[var(--color-text-secondary)]">
+                {product.imageMeta ? (
+                  <p>
+                    {product.imageMeta.width}×{product.imageMeta.height} · {formatBytes(product.imageMeta.fullBytes)}
+                    {' '}({t('imgBefore')}: {formatBytes(product.imageMeta.originalBytes)})
+                  </p>
+                ) : null}
+                <label className="mt-1 inline-flex items-center gap-2 text-sm">
+                  <input type="checkbox" name="removeImage" /> {t('removeImage')}
+                </label>
+              </div>
             </div>
           )}
         </div>

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireAdmin } from '@/lib/admin/guard';
 import { getT } from '@/lib/admin/lang';
 import { EMIRATE_LABELS, getSnapshot, studioEditUrl } from '@/lib/admin/data';
@@ -71,6 +72,11 @@ export default async function BranchesPage({
                   <td className={td}><StatusBadge state={b.state} t={t} /></td>
                   <td className={td}>{b.missing.length ? b.missing.map((m) => t(m)).join(' · ') : '—'}</td>
                   <td className={td}>
+                    {!b.isFallback && (
+                      <Link href={`/admin/branches/${encodeURIComponent(b.id)}/gallery`} className="me-3 whitespace-nowrap text-[var(--color-interactive-hover)] hover:underline">
+                        {t('gallery')}
+                      </Link>
+                    )}
                     <a href={studioEditUrl(b)} target="_blank" rel="noreferrer" className="whitespace-nowrap text-[var(--color-interactive-hover)] hover:underline">
                       {t('edit')}
                     </a>
