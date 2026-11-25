@@ -40,6 +40,11 @@ export default async function AdminMenuPage({
           + {t('addItem')}
         </Link>
       </div>
+      <div className="flex flex-wrap gap-2" aria-label={t('importExport')}>
+        <a href="/admin/menu/export?format=csv" className={smallBtn}>{t('exportCsv')}</a>
+        <a href="/admin/menu/export?format=xlsx" className={smallBtn}>{t('exportXlsx')}</a>
+        <Link href="/admin/menu/import" className={smallBtn}>{t('importMenu')}</Link>
+      </div>
 
       {!writeConfigured() && <p role="alert" className="text-sm text-[var(--color-warning)]">{t('errConfig')}</p>}
       {msgKey && (

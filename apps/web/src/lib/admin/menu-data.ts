@@ -46,6 +46,7 @@ export interface AdminProduct {
   isFeatured: boolean | null;
   sortOrder: number | null;
   imageUrl: string | null;
+  imageFilename: string | null;
 }
 
 export interface AdminCategory {
@@ -81,7 +82,8 @@ const PRODUCT_FIELDS = `
   "categoryId": category._ref, "categoryEn": category->nameEn,
   descriptionEn, descriptionAr, displayPriceAed, allergens, dietaryFlags,
   isActive, isNew, isFeatured, sortOrder,
-  "imageUrl": productImage.asset->url
+  "imageUrl": productImage.asset->url,
+  "imageFilename": productImage.asset->originalFilename
 `;
 
 export async function listProducts(): Promise<AdminProduct[]> {

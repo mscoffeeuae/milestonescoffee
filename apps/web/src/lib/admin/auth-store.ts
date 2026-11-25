@@ -21,7 +21,7 @@ function derive(password: string, salt: Buffer): Promise<Buffer> {
 
 async function readStoredHash(): Promise<string | null> {
   try {
-    const j = JSON.parse(await readFile(authFilePath(), 'utf8')) as { hash?: unknown };
+    const j = JSON.parse(await readFile(/* turbopackIgnore: true */ authFilePath(), 'utf8')) as { hash?: unknown };
     return typeof j.hash === 'string' && j.hash.startsWith('scrypt$') ? j.hash : null;
   } catch {
     return null; // missing, empty or unreadable -> fall back to env

@@ -37,7 +37,8 @@ const nextConfig: NextConfig = {
   },
 
   // Admin menu image uploads go through a server action (5 MB image cap enforced in the action).
-  experimental: { serverActions: { bodySizeLimit: '6mb' } },
+  // The proxy buffers request bodies (default 10 MB); the menu import accepts a 50 MB images ZIP.
+  experimental: { serverActions: { bodySizeLimit: '6mb' }, proxyClientMaxBodySize: '60mb' },
 
   // Output standalone for Docker
   output: 'standalone',
