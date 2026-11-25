@@ -36,6 +36,9 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // Admin menu image uploads go through a server action (5 MB image cap enforced in the action).
+  experimental: { serverActions: { bodySizeLimit: '6mb' } },
+
   // Output standalone for Docker
   output: 'standalone',
 };

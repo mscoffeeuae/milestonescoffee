@@ -5,6 +5,7 @@ import type { AdminLang, T } from '@/lib/admin/i18n';
 const NAV = [
   { href: '/admin', key: 'dashboard' },
   { href: '/admin/branches', key: 'branches' },
+  { href: '/admin/menu', key: 'menu' },
   { href: '/admin/analytics', key: 'analytics' },
   { href: '/admin/settings', key: 'settings' },
 ] as const;
